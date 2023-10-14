@@ -1,0 +1,46 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.7.34031.279
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ETVRTrackingModule", "ETVRTrackingModule.csproj", "{648E0B9C-4217-4FC2-B952-AA1C51746141}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VRCFaceTracking.Core", "..\VRCFaceTracking\VRCFaceTracking.Core\VRCFaceTracking.Core.csproj", "{DAD2221C-8F1D-492C-8C76-6D53E49E0457}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9D03D4E3-5C2F-4308-B253-1CCF7DEE062A}"
+	ProjectSection(SolutionItems) = preProject
+		Assets\ETVRLogo.png = Assets\ETVRLogo.png
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{648E0B9C-4217-4FC2-B952-AA1C51746141}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{648E0B9C-4217-4FC2-B952-AA1C51746141}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{648E0B9C-4217-4FC2-B952-AA1C51746141}.Debug|x64.ActiveCfg = Debug|x64
+		{648E0B9C-4217-4FC2-B952-AA1C51746141}.Debug|x64.Build.0 = Debug|x64
+		{648E0B9C-4217-4FC2-B952-AA1C51746141}.Release|Any CPU.ActiveCfg = Release|x64
+		{648E0B9C-4217-4FC2-B952-AA1C51746141}.Release|Any CPU.Build.0 = Release|x64
+		{648E0B9C-4217-4FC2-B952-AA1C51746141}.Release|x64.ActiveCfg = Release|x64
+		{648E0B9C-4217-4FC2-B952-AA1C51746141}.Release|x64.Build.0 = Release|x64
+		{DAD2221C-8F1D-492C-8C76-6D53E49E0457}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{DAD2221C-8F1D-492C-8C76-6D53E49E0457}.Debug|Any CPU.Build.0 = Debug|x64
+		{DAD2221C-8F1D-492C-8C76-6D53E49E0457}.Debug|x64.ActiveCfg = Debug|x64
+		{DAD2221C-8F1D-492C-8C76-6D53E49E0457}.Debug|x64.Build.0 = Debug|x64
+		{DAD2221C-8F1D-492C-8C76-6D53E49E0457}.Release|Any CPU.ActiveCfg = Release|x64
+		{DAD2221C-8F1D-492C-8C76-6D53E49E0457}.Release|Any CPU.Build.0 = Release|x64
+		{DAD2221C-8F1D-492C-8C76-6D53E49E0457}.Release|x64.ActiveCfg = Release|x64
+		{DAD2221C-8F1D-492C-8C76-6D53E49E0457}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F1B1D611-9B5D-4363-A5A8-DB4925BA913E}
+	EndGlobalSection
+EndGlobal

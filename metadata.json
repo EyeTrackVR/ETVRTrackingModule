@@ -1,0 +1,16 @@
+{
+    "ModuleId": "xxx",
+    "AuthorName": "Lorow with ETVR Team",
+    "DllFileName": "ETVRTrackingModule.dll",
+    "Downloads": 0,
+    "DownloadUrl": "",
+    "LastUpdated": "",
+    "ModuleDescription": "The module translates the eye tracking data from ETVR to VRCFT and vice versa",
+    "ModuleName": "ETVR Tracking Module",
+    "ModulePageUrl": "https://github.com/lorow/ETVRTrackingModule",
+    "Rating": 0,
+    "Ratings": 0,
+    "RatingSum": 0,
+    "UsageInstructions": "Follow instructions on https://github.com/lorow/ETVRTrackingModule.",
+    "Version": "1.0"
+}
