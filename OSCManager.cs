@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using VRCFaceTracking.Core.OSC;
 
 namespace ETVRTrackingModule
 {
@@ -99,7 +100,6 @@ namespace ETVRTrackingModule
 
             if (address == "")
                 return msg;
-
             msg.address = address;
 
             // OSC adresses are composed of /address , types value, so we need to check if we have a type
@@ -112,7 +112,9 @@ namespace ETVRTrackingModule
             currentStep++;
 
             float value = ParseOSCFloat(buffer, length, ref currentStep);
-               
+
+            _logger.LogInformation(msg.address, value.ToString());
+
             msg.value = value;
             msg.success = true;
 
@@ -127,7 +129,6 @@ namespace ETVRTrackingModule
             if (buffer[0] != 47)
                 return oscAddress;
 
-            _logger.LogInformation("Started processing");
             for (int i = 0; i<length; i++)
             {
                 // we've reached the end of the address section, let's update the steps coutner
@@ -137,21 +138,24 @@ namespace ETVRTrackingModule
                     step = i + 1;
                     // the size of a packet is a multiple of 4
                     if (step % 4 != 0) { step += 4 - (step % 4); }
-
                     break;
                 }
                 oscAddress += (char)buffer[i];
-                _logger.LogInformation($"iteration {i}, adress so far {oscAddress}, added char {(char)buffer[i]}");
-                Thread.Sleep(100);
             }
-            _logger.LogInformation($"OSC address: {oscAddress}");
             return oscAddress;
         }
 
         float ParseOSCFloat(byte[] buffer, int length, ref int step)
         {
-            return 0.0f;
+            var valueSection = buffer[step..length];
+            if (BitConverter.IsLittleEndian)
+            {
+                Array.Reverse(valueSection);
+            }
+            float OSCValue = BitConverter.ToSingle(valueSection, 0);
+            _logger.LogInformation("value is ", OSCValue.ToString());
+            Thread.Sleep(100);
+            return OSCValue;
         }
-
     }
 }
