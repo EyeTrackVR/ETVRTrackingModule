@@ -37,7 +37,7 @@ namespace ETVRTrackingModule
         public OSCManager(ILogger iLogger, int? port = null) {
             _logger = iLogger;
             _receivingPort = port ?? _defaultPort;
-             _receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            _receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
             try
             {
@@ -59,14 +59,13 @@ namespace ETVRTrackingModule
 
         private void OSCListen()
         {
-            var buffer = new byte[4096]; // I'm not sure how big our messages are, or if that even matters
+            var buffer = new byte[4096];
             while (_shouldRun) 
             {
                 try
                 {
                     if (_receiver.IsBound)
                     {
-                        //_logger.LogInformation("we connected");
                         var length = _receiver.Receive(buffer);
                         OSCMessage msg = ParseOSCMessage(buffer, length);
                         // map the message
@@ -112,13 +111,9 @@ namespace ETVRTrackingModule
                 }
             }
             float value = ParseOSCFloat(buffer, length, ref currentStep);
-            _logger.LogInformation($"Parse value: {value}");
-    /*            
-            float value = ParseOSCFloat(buffer, length, ref currentStep);
 
             msg.value = value;
             msg.success = true;
-*/
             return msg;
         }
 
