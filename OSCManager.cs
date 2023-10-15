@@ -11,17 +11,10 @@ namespace ETVRTrackingModule
         ERROR,
     }
 
-    struct OSCMessage
-    {
-        public string address;
-        public float value;
-        public bool success;
-    }
-
     public class OSCManager
     {
         private Socket _receiver;
-        private Socket _sender;
+        //private Socket _sender;
 
         private ILogger _logger;
 
@@ -30,12 +23,15 @@ namespace ETVRTrackingModule
 
         public OSCState State { get; private set; } = OSCState.IDLE;
 
+        private ExpressionsMapper _expressionMapper;
+
         private int _receivingPort;
         private const int _defaultPort = 8889;
         private const int connectionTimeout = 10000;
 
-        public OSCManager(ILogger iLogger, int? port = null) {
+        public OSCManager(ILogger iLogger, ExpressionsMapper expressionsMapper, int? port = null) {
             _logger = iLogger;
+            _expressionMapper = expressionsMapper;
             _receivingPort = port ?? _defaultPort;
             _receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
@@ -68,7 +64,7 @@ namespace ETVRTrackingModule
                     {
                         var length = _receiver.Receive(buffer);
                         OSCMessage msg = ParseOSCMessage(buffer, length);
-                        // map the message
+                        _expressionMapper.MapMessage(msg);
                     }
                 }
                 catch (Exception){}
@@ -99,17 +95,9 @@ namespace ETVRTrackingModule
                 return msg;
             // skipping , char
             currentStep++;
-            // now, let's skip the types section
-            for (int i=currentStep; i < length; i++)
-            {
-                if (buffer[i] == 0)
-                {
-                    currentStep = i + 1;
-                    // we've reached the end of this segment, let's normalize it to 4 bytes and skip ahead
-                    if (currentStep % 4 != 0) { currentStep += 4 - (currentStep % 4); }
-                    break;
-                }
-            }
+
+            ParseOSCTypes(buffer, length, ref currentStep); // we purposefully ignore the types, for now
+
             float value = ParseOSCFloat(buffer, length, ref currentStep);
 
             msg.value = value;
@@ -140,6 +128,24 @@ namespace ETVRTrackingModule
                 oscAddress += (char)buffer[i];
             }
             return oscAddress;
+        }
+
+        string ParseOSCTypes(byte[] buffer, int length, ref int step)
+        {
+            string types = "";
+            // now, let's skip the types section
+            for (int i = step; i < length; i++)
+            {
+                if (buffer[i] == 0)
+                {
+                    step = i + 1;
+                    // we've reached the end of this segment, let's normalize it to 4 bytes and skip ahead
+                    if (step % 4 != 0) { step += 4 - (step % 4); }
+                    break;
+                }
+                types += (char)buffer[i];
+            }
+            return types;
         }
 
         float ParseOSCFloat(byte[] buffer, int length, ref int step)

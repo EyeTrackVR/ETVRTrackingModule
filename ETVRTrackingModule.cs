@@ -7,12 +7,14 @@ namespace ETVRTrackingModule
     public class ETVRTrackingModule : ExtTrackingModule
     {
         private OSCManager? _OSCManager;
+        private ExpressionsMapper? _expressionMapper;
 
         public override (bool SupportsEye, bool SupportsExpression) Supported => (true, false);
         public override (bool eyeSuccess, bool expressionSuccess) Initialize(bool eyeAvailable, bool expressionAvailable)
         {
+            _expressionMapper = new ExpressionsMapper();
+            _OSCManager = new OSCManager(Logger, _expressionMapper);
 
-            _OSCManager = new OSCManager(Logger);
             if (_OSCManager.State != OSCState.CONNECTED) {
                 Logger.LogError("ETVR Module could not connect to the specified port.");
                 return (false, false);
@@ -32,6 +34,7 @@ namespace ETVRTrackingModule
 
         public override void Update()
         {
+            _expressionMapper?.UpdateVRCFTDict();
             Thread.Sleep(10);
         }
     }
