@@ -1,16 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using VRCFaceTracking.Core.OSC;
 
 namespace ETVRTrackingModule
 {
-
     public enum OSCState
     {
         IDLE,
@@ -38,7 +31,7 @@ namespace ETVRTrackingModule
         public OSCState State { get; private set; } = OSCState.IDLE;
 
         private int _receivingPort;
-        private const int _defaultPort = 8888;
+        private const int _defaultPort = 8889;
         private const int connectionTimeout = 10000;
 
         public OSCManager(ILogger iLogger, int? port = null) {
@@ -74,8 +67,8 @@ namespace ETVRTrackingModule
                     if (_receiver.IsBound)
                     {
                         //_logger.LogInformation("we connected");
-                        var lenght = _receiver.Receive(buffer);
-                        OSCMessage msg = ParseOSCMessage(buffer, lenght);
+                        var length = _receiver.Receive(buffer);
+                        OSCMessage msg = ParseOSCMessage(buffer, length);
                         // map the message
                     }
                 }
@@ -107,17 +100,25 @@ namespace ETVRTrackingModule
                 return msg;
             // skipping , char
             currentStep++;
-
-            // we skip the type tag, since ETVR is only sending floats, we're fine.
-            currentStep++;
-
+            // now, let's skip the types section
+            for (int i=currentStep; i < length; i++)
+            {
+                if (buffer[i] == 0)
+                {
+                    currentStep = i + 1;
+                    // we've reached the end of this segment, let's normalize it to 4 bytes and skip ahead
+                    if (currentStep % 4 != 0) { currentStep += 4 - (currentStep % 4); }
+                    break;
+                }
+            }
             float value = ParseOSCFloat(buffer, length, ref currentStep);
-
-            _logger.LogInformation(msg.address, value.ToString());
+            _logger.LogInformation($"Parse value: {value}");
+    /*            
+            float value = ParseOSCFloat(buffer, length, ref currentStep);
 
             msg.value = value;
             msg.success = true;
-
+*/
             return msg;
         }
 
@@ -131,12 +132,13 @@ namespace ETVRTrackingModule
 
             for (int i = 0; i<length; i++)
             {
-                // we've reached the end of the address section, let's update the steps coutner
+                // we've reached the end of the address section, let's update the steps counter
                 // to point at the value section
                 if (buffer[i] == 0)
                 {
+                    // we need to ensure that we include the null terminator
                     step = i + 1;
-                    // the size of a packet is a multiple of 4
+                    // the size of a packet is a multiple of 4, we need to round it up 
                     if (step % 4 != 0) { step += 4 - (step % 4); }
                     break;
                 }
@@ -152,9 +154,8 @@ namespace ETVRTrackingModule
             {
                 Array.Reverse(valueSection);
             }
+
             float OSCValue = BitConverter.ToSingle(valueSection, 0);
-            _logger.LogInformation("value is ", OSCValue.ToString());
-            Thread.Sleep(100);
             return OSCValue;
         }
     }
