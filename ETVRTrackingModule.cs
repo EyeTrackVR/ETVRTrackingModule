@@ -9,10 +9,10 @@ namespace ETVRTrackingModule
         private OSCManager? _OSCManager;
         private ExpressionsMapper? _expressionMapper;
 
-        public override (bool SupportsEye, bool SupportsExpression) Supported => (true, false);
+        public override (bool SupportsEye, bool SupportsExpression) Supported => (true, true);
         public override (bool eyeSuccess, bool expressionSuccess) Initialize(bool eyeAvailable, bool expressionAvailable)
         {
-            _expressionMapper = new ExpressionsMapper();
+            _expressionMapper = new ExpressionsMapper(Logger);
             _OSCManager = new OSCManager(Logger, _expressionMapper);
 
             if (_OSCManager.State != OSCState.CONNECTED) {
@@ -24,7 +24,7 @@ namespace ETVRTrackingModule
             var stream = GetType().Assembly.GetManifestResourceStream("ETVRTrackingModule.Assets.ETVRLogo.png");
             ModuleInformation.StaticImages = stream != null? new List<Stream> { stream } : ModuleInformation.StaticImages;
 
-            return (true, false);
+            return (true, true);
         }
 
         public override void Teardown()
@@ -34,7 +34,7 @@ namespace ETVRTrackingModule
 
         public override void Update()
         {
-            _expressionMapper?.UpdateVRCFTDict();
+            _expressionMapper?.UpdateVRCFTEyeData();
             Thread.Sleep(10);
         }
     }
