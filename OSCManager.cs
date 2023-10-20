@@ -26,27 +26,26 @@ namespace ETVRTrackingModule
         private ExpressionsMapper _expressionMapper;
 
         private int _receivingPort;
-        private const int _defaultPort = 8889;
-        private const int connectionTimeout = 10000;
+        private const int DefaultPort = 8889;
+        private const int ConnectionTimeout = 10000;
 
         public OSCManager(ILogger iLogger, ExpressionsMapper expressionsMapper, int? port = null) {
             _logger = iLogger;
             _expressionMapper = expressionsMapper;
-            _receivingPort = port ?? _defaultPort;
+            _receivingPort = port ?? DefaultPort;
             _receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
             try
             {
                 // we should make this a setting, how do settings work in vrcft?
                 _receiver.Bind(new IPEndPoint(IPAddress.Loopback, _receivingPort));
-                _receiver.ReceiveTimeout = connectionTimeout;
+                _receiver.ReceiveTimeout = ConnectionTimeout;
                 State = OSCState.CONNECTED;
             }
             catch (Exception e)
             {
                 _logger.LogError(e.ToString());
                 State = OSCState.ERROR;
-                
             }
 
             _literningThread = new Thread(OSCListen);

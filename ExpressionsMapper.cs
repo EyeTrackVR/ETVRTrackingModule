@@ -1,48 +1,30 @@
-﻿
+﻿using ETVRTrackingModule.ExpressionStrategies;
 using Microsoft.Extensions.Logging;
-using VRCFaceTracking.Core.Params.Data;
-using VRCFaceTracking.Core.Params.Expressions;
+using VRCFaceTracking;
 
 namespace ETVRTrackingModule
 {
     public class ExpressionsMapper
     {
-        private Dictionary<string, float> parameterValues = new()
-        {
-            // v1, legacy support
-            { "RightEyeLidExpandedSqueeze", 0f },
-            { "LeftEyeLidExpandedSqueeze", 0f },
-            { "LeftEyeX", 0f },
-            { "RightEyeX", 0f },
-            { "EyesY", 0f },
-            // v2
-            { "EyeX", 0f },
-            { "EyeLeftX", 0f },
-            { "EyeRightX", 0f },
-            { "EyeLeftY", 0f },
-            { "EyeRightY", 0f },
-            { "EyeLid", 0f },
-            { "EyeLidLeft", 0f },
-            { "EyeLidRight", 0f },
-        };
-
+        private IExpressionMapper _mappingStrategy;
+        
         ILogger _logger;
         public ExpressionsMapper(ILogger logger) 
         {
             _logger = logger;
+            _mappingStrategy = new V2Mapper();
         }
         public void MapMessage(OSCMessage msg)
         {
             if (!msg.success)
                 return;
-            if (IsV2Param(msg))
+            
+            var nextStrategy =  IsV2Param(msg) ? (IExpressionMapper) new V2Mapper() : new V1Mapper();
+            if (_mappingStrategy.GetType() != nextStrategy.GetType())
             {
-                string paramToMap = GetParamToMap(msg.address);
-                if (parameterValues.ContainsKey(paramToMap))
-                {
-                    parameterValues[paramToMap] = msg.value;
-                }
+                _mappingStrategy = nextStrategy;
             }
+            _mappingStrategy.handleOSCMessage(msg);
         }
 
         private bool IsV2Param(OSCMessage oscMessage)
@@ -50,14 +32,9 @@ namespace ETVRTrackingModule
             return oscMessage.address.Contains("/v2/");
         }
 
-        private static string GetParamToMap(string oscAddress)
-        {
-            var oscUrlSplit = oscAddress.Split("/");
-            return oscUrlSplit[^1];
-        }
-
         public void UpdateVRCFTEyeData()
         {
+            _mappingStrategy.UpdateVRCFTEyeData(ref UnifiedTracking.Data.Eye, ref UnifiedTracking.Data.Shapes);
         }
     }
 }
