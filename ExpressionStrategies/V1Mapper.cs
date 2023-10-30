@@ -1,4 +1,5 @@
-﻿using VRCFaceTracking.Core.Params.Data;
+﻿using Microsoft.Extensions.Logging;
+using VRCFaceTracking.Core.Params.Data;
 using VRCFaceTracking.Core.Params.Expressions;
 using VRCFaceTracking.Core.Types;
 
@@ -14,6 +15,13 @@ public class V1Mapper : IExpressionMapper
         { "RightEyeX", 0f },
         { "EyesY", 0f },
     };
+
+    private ILogger _logger;
+
+    public V1Mapper(ILogger logger)
+    {
+        _logger = logger;
+    }
     
     public void handleOSCMessage(OSCMessage message)
     {

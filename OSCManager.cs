@@ -63,6 +63,9 @@ namespace ETVRTrackingModule
                     {
                         var length = _receiver.Receive(buffer);
                         OSCMessage msg = ParseOSCMessage(buffer, length);
+                        
+                        _logger.LogInformation($"{msg.address} {msg.value} {msg.success}");
+                        
                         _expressionMapper.MapMessage(msg);
                     }
                 }

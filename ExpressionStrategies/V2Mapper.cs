@@ -1,4 +1,5 @@
-﻿using VRCFaceTracking.Core.Params.Data;
+﻿using Microsoft.Extensions.Logging;
+using VRCFaceTracking.Core.Params.Data;
 
 namespace ETVRTrackingModule.ExpressionStrategies;
 
@@ -16,7 +17,12 @@ public class V2Mapper : IExpressionMapper
         { "EyeLidRight", 0f },
     };
     
+    private ILogger _logger;
 
+    public V2Mapper(ILogger logger)
+    {
+        _logger = logger;
+    }
     public void handleOSCMessage(OSCMessage message)
     {
         string paramToMap = IExpressionMapper.GetParamToMap(message.address);
@@ -28,6 +34,5 @@ public class V2Mapper : IExpressionMapper
 
     public void UpdateVRCFTEyeData(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes)
     {
-        throw new NotImplementedException();
     }
 }
