@@ -16,7 +16,6 @@ namespace ETVRTrackingModule
         }
         public void MapMessage(OSCMessage msg)
         {
-            _logger.LogInformation("parsing message");
             if (!msg.success)
                 return;
             
@@ -24,7 +23,6 @@ namespace ETVRTrackingModule
             
             if (_mappingStrategy.GetType() != nextStrategy.GetType())
             {
-                _logger.LogInformation($"Detected differing strategy, changing from {_mappingStrategy.GetType()} to {nextStrategy.GetType()}");
                 _mappingStrategy = nextStrategy;
             }
             _mappingStrategy.handleOSCMessage(msg);
@@ -34,7 +32,6 @@ namespace ETVRTrackingModule
         private bool IsV2Param(OSCMessage oscMessage)
         {
             var isv2Param = oscMessage.address.Contains("/v2/");
-            _logger.LogInformation($"is V2 param: {isv2Param.ToString()}");
             return isv2Param;
         }
     }

@@ -44,7 +44,7 @@ namespace ETVRTrackingModule
             }
             catch (Exception e)
             {
-                _logger.LogError(e.ToString());
+                _logger.LogError($"Connecting to {_receivingPort} port failed, with error: {e}");
                 State = OSCState.ERROR;
             }
 
@@ -63,9 +63,6 @@ namespace ETVRTrackingModule
                     {
                         var length = _receiver.Receive(buffer);
                         OSCMessage msg = ParseOSCMessage(buffer, length);
-                        
-                        _logger.LogInformation($"{msg.address} {msg.value} {msg.success}");
-                        
                         _expressionMapper.MapMessage(msg);
                     }
                 }
