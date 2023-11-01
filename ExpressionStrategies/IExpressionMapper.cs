@@ -2,7 +2,7 @@
 
 namespace ETVRTrackingModule.ExpressionStrategies;
 
-public interface IExpressionMapper
+public interface ImappingStategy
 {
     public static string GetParamToMap(string oscAddress)
     {

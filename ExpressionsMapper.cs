@@ -6,7 +6,7 @@ namespace ETVRTrackingModule
 {
     public class ExpressionsMapper
     {
-        private IExpressionMapper _mappingStrategy;
+        private ImappingStategy _mappingStrategy;
         
         ILogger _logger;
         public ExpressionsMapper(ILogger logger) 
@@ -20,7 +20,7 @@ namespace ETVRTrackingModule
             if (!msg.success)
                 return;
             
-            var nextStrategy =  IsV2Param(msg) ? (IExpressionMapper) new V2Mapper(_logger) : new V1Mapper(_logger);
+            var nextStrategy =  IsV2Param(msg) ? (ImappingStategy) new V2Mapper(_logger) : new V1Mapper(_logger);
             
             if (_mappingStrategy.GetType() != nextStrategy.GetType())
             {
@@ -28,6 +28,7 @@ namespace ETVRTrackingModule
                 _mappingStrategy = nextStrategy;
             }
             _mappingStrategy.handleOSCMessage(msg);
+            _mappingStrategy.UpdateVRCFTEyeData(ref UnifiedTracking.Data.Eye, ref UnifiedTracking.Data.Shapes);
         }
 
         private bool IsV2Param(OSCMessage oscMessage)
@@ -35,11 +36,6 @@ namespace ETVRTrackingModule
             var isv2Param = oscMessage.address.Contains("/v2/");
             _logger.LogInformation($"is V2 param: {isv2Param.ToString()}");
             return isv2Param;
-        }
-
-        public void UpdateVRCFTEyeData()
-        {
-            _mappingStrategy.UpdateVRCFTEyeData(ref UnifiedTracking.Data.Eye, ref UnifiedTracking.Data.Shapes);
         }
     }
 }

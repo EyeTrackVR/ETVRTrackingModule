@@ -34,7 +34,6 @@ namespace ETVRTrackingModule
 
         public override void Update()
         {
-            _expressionMapper?.UpdateVRCFTEyeData();
             Thread.Sleep(10);
         }
     }

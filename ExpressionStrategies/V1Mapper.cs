@@ -5,7 +5,7 @@ using VRCFaceTracking.Core.Types;
 
 namespace ETVRTrackingModule.ExpressionStrategies;
 
-public class V1Mapper : IExpressionMapper
+public class V1Mapper : ImappingStategy
 {
     private Dictionary<string, float> _parameterValues = new()
     {
@@ -25,7 +25,7 @@ public class V1Mapper : IExpressionMapper
     
     public void handleOSCMessage(OSCMessage message)
     {
-        var paramToMap = IExpressionMapper.GetParamToMap(message.address);
+        var paramToMap = ImappingStategy.GetParamToMap(message.address);
         if (_parameterValues.ContainsKey(paramToMap))
         {
             _parameterValues[paramToMap] = message.value;
