@@ -40,30 +40,52 @@ public class V1Mapper : ImappingStategy
 
     private void HandleEyeOpenness(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes)
     {
-        // we should widen the eye 
-        if (_parameterValues["RightEyeLidExpandedSqueeze"] > 0.8f)
-        {
-            eyeData.Right.Openness = _parameterValues["RightEyeLidExpandedSqueeze"];
-            eyeShapes[(int)UnifiedExpressions.EyeWideRight].Weight = 1;
-        }
-        if (_parameterValues["RightEyeLidExpandedSqueeze"] < 0.0f)
-        {
-            eyeData.Right.Openness = _parameterValues["RightEyeLidExpandedSqueeze"];
-            eyeShapes[(int)UnifiedExpressions.EyeSquintRight].Weight = -1;
-        }
-        eyeData.Left.Openness = _parameterValues["RightEyeLidExpandedSqueeze"];
+        // so how it works, currently we cannot output values above 1.0 and below 0.0
+        // which means, we cannot really output whether someone's squeezing their eyes
+        // or making a surprised face. Therefore, we kinda have to cheat. 
+        // If detect that the values provided by ETVR are below or above a certain threshold 
+        // we fake the squeeze and widen
         
-        if (_parameterValues["LeftEyeLidExpandedSqueeze"] > 0.8f)
+        // todo, make this configurable via OSC commands I guess, or we switch to sockets
+        float squeezeThreshold = 0.1f;
+        float widenThreshold = 0.95f;
+
+        float baseRightEyeOpenness = _parameterValues["RightEyeLidExpandedSqueeze"];
+        float baseLeftEyeOpenness = _parameterValues["LeftEyeLidExpandedSqueeze"];
+        
+        float rightYyeOpenness = Math.Clamp(baseRightEyeOpenness, squeezeThreshold, widenThreshold);
+        float leftYyeOpenness = Math.Clamp(baseLeftEyeOpenness, squeezeThreshold, widenThreshold);
+
+
+        eyeData.Right.Openness = rightYyeOpenness;
+        eyeData.Left.Openness = leftYyeOpenness;
+        
+        if (baseRightEyeOpenness >= widenThreshold)
         {
-            eyeData.Left.Openness = _parameterValues["LeftEyeLidExpandedSqueeze"];
+            // todo, figure out how to make this more responsive
+            // todo, maybe use a curve to determine the wideness factor based
+            // todo, based on the difference between the base openness and clamped? 
+            eyeShapes[(int)UnifiedExpressions.EyeWideRight].Weight = 1;
+            eyeShapes[(int)UnifiedExpressions.EyeSquintRight].Weight = 0;
+        }
+
+        if (baseLeftEyeOpenness >= widenThreshold)
+        {
             eyeShapes[(int)UnifiedExpressions.EyeWideLeft].Weight = 1;
+            eyeShapes[(int)UnifiedExpressions.EyeSquintLeft].Weight = 0;
         }
-        if (_parameterValues["LeftEyeLidExpandedSqueeze"] < 0.0f)
+
+        if (baseLeftEyeOpenness <= squeezeThreshold)
         {
-            eyeData.Left.Openness = _parameterValues["LeftEyeLidExpandedSqueeze"];
-            eyeShapes[(int)UnifiedExpressions.EyeSquintLeft].Weight = -1;
+            eyeShapes[(int)UnifiedExpressions.EyeWideLeft].Weight = 0;
+            eyeShapes[(int)UnifiedExpressions.EyeSquintLeft].Weight = 1;
         }
-        eyeData.Left.Openness = _parameterValues["LeftEyeLidExpandedSqueeze"];
+        
+        if (baseRightEyeOpenness <= squeezeThreshold)
+        {
+            eyeShapes[(int)UnifiedExpressions.EyeWideRight].Weight = 0;
+            eyeShapes[(int)UnifiedExpressions.EyeSquintRight].Weight = 1;
+        }
     }
 
     private void HandleEyeGaze(ref UnifiedEyeData eyeData)
