@@ -11,5 +11,4 @@ public interface ImappingStategy
     }
     
     public void handleOSCMessage(OSCMessage message);
-    public void UpdateVRCFTEyeData( ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes);
 }

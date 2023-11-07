@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using VRCFaceTracking;
 using VRCFaceTracking.Core.Params.Data;
 using VRCFaceTracking.Core.Params.Expressions;
 using VRCFaceTracking.Core.Types;
@@ -29,6 +30,7 @@ public class V1Mapper : ImappingStategy
         if (_parameterValues.ContainsKey(paramToMap))
         {
             _parameterValues[paramToMap] = message.value;
+            UpdateVRCFTEyeData(ref UnifiedTracking.Data.Eye, ref UnifiedTracking.Data.Shapes);
         }
     }
 
@@ -43,7 +45,7 @@ public class V1Mapper : ImappingStategy
         // so how it works, currently we cannot output values above 1.0 and below 0.0
         // which means, we cannot really output whether someone's squeezing their eyes
         // or making a surprised face. Therefore, we kinda have to cheat. 
-        // If detect that the values provided by ETVR are below or above a certain threshold 
+        // If we detect that the values provided by ETVR are below or above a certain threshold 
         // we fake the squeeze and widen
         
         // todo, make this configurable via OSC commands I guess, or we switch to sockets

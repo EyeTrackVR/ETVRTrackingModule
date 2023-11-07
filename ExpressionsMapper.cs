@@ -1,6 +1,5 @@
 ﻿using ETVRTrackingModule.ExpressionStrategies;
 using Microsoft.Extensions.Logging;
-using VRCFaceTracking;
 
 namespace ETVRTrackingModule
 {
@@ -26,7 +25,6 @@ namespace ETVRTrackingModule
                 _mappingStrategy = nextStrategy;
             }
             _mappingStrategy.handleOSCMessage(msg);
-            _mappingStrategy.UpdateVRCFTEyeData(ref UnifiedTracking.Data.Eye, ref UnifiedTracking.Data.Shapes);
         }
 
         private bool IsV2Param(OSCMessage oscMessage)
