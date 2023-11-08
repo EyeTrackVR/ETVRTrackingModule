@@ -37,32 +37,46 @@ public class V2Mapper : ImappingStategy
     public void handleOSCMessage(OSCMessage message)
     {
         string paramToMap = ImappingStategy.GetParamToMap(message.address);
-        if (parameterValues.ContainsKey(paramToMap))
-        {
-            parameterValues[paramToMap] = message.value;
-
-            var singleEyeMode = singleEyeParamNames.Contains(paramToMap);
-            UpdateVRCFTEyeData(ref UnifiedTracking.Data.Eye, ref UnifiedTracking.Data.Shapes, singleEyeMode);
-        }
+        if (!_parameterValues.ContainsKey(paramToMap))
+            return;
+        
+        _parameterValues[paramToMap] = message.value;
+        var singleEyeMode = _singleEyeParamNames.Contains(paramToMap);
+        UpdateVRCFTEyeData(ref UnifiedTracking.Data.Eye, ref UnifiedTracking.Data.Shapes, singleEyeMode);
     }
 
-    public void UpdateVRCFTEyeData(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes, bool singleEyeMode = false)
+    private void UpdateVRCFTEyeData(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes, bool isSingleEyeMode = false)
     {
-        handleEyeGaze(ref eyeData, singleEyeMode);
+        HandleEyeGaze(ref eyeData, isSingleEyeMode);
+        HandleEyeOpenness(ref eyeData, ref eyeShapes, isSingleEyeMode);
     }
     
-    private void handleEyeGaze(ref UnifiedEyeData eyeData, bool singleEyeMode)
+    private void HandleEyeGaze(ref UnifiedEyeData eyeData, bool isSingleEyeMode)
     {
-        // todo, we can probably drop support but EyeX/EyeY but I'll leave it be for now
-        if (singleEyeMode)
+        if (isSingleEyeMode)
         {
-            var combinedGaze = new Vector2(parameterValues["EyeX"], parameterValues["EyeY"]);
+            var combinedGaze = new Vector2(_parameterValues["EyeX"], _parameterValues["EyeY"]);
             eyeData.Left.Gaze = combinedGaze;
             eyeData.Right.Gaze = combinedGaze;
             return;
         }
 
-        eyeData.Left.Gaze = new Vector2(parameterValues["EyeLeftX"], parameterValues["EyeLeftY"]);
-        eyeData.Right.Gaze = new Vector2(parameterValues["EyeRightX"], parameterValues["EyeRightY"]);
+        eyeData.Left.Gaze = new Vector2(_parameterValues["EyeLeftX"], _parameterValues["EyeLeftY"]);
+        eyeData.Right.Gaze = new Vector2(_parameterValues["EyeRightX"], _parameterValues["EyeRightY"]);
+    }
+
+    private void HandleEyeOpenness(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes, bool isSingleEyeMode = false)
+    {
+        if (isSingleEyeMode)
+        {
+            var eyeOpenness = _parameterValues["EyeLid"];
+            
+            eyeData.Left.Openness = eyeOpenness;
+            eyeData.Right.Openness = eyeOpenness;
+            return;
+        }
+        
+        eyeData.Left.Openness = _parameterValues["EyeLidLeft"];
+        eyeData.Right.Openness = _parameterValues["EyeLidRight"];
     }
 }
