@@ -7,25 +7,25 @@ namespace ETVRTrackingModule.ExpressionStrategies;
 
 public class V2Mapper : ImappingStategy
 {
-    private string[] singleEyeParamNames =
+    private readonly string[] _singleEyeParamNames =
     {
         "EyeX",
         "EyeY",
         "EyeLid"
     };
     
-    private Dictionary<string, float> parameterValues = new()
+    private Dictionary<string, float> _parameterValues = new()
     {
         { "EyeX", 0f },
         { "EyeY", 0f },
-        { "EyeLid", 0f },
+        { "EyeLid", 1f },
         
         { "EyeLeftX", 0f },
         { "EyeLeftY", 0f },
         { "EyeRightX", 0f },
         { "EyeRightY", 0f },
-        { "EyeLidLeft", 0f },
-        { "EyeLidRight", 0f },
+        { "EyeLidLeft", 1f },
+        { "EyeLidRight", 1f },
     };
     
     private ILogger _logger;

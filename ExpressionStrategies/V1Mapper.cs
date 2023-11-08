@@ -10,8 +10,8 @@ public class V1Mapper : ImappingStategy
 {
     private Dictionary<string, float> _parameterValues = new()
     {
-        { "RightEyeLidExpandedSqueeze", 0f },
-        { "LeftEyeLidExpandedSqueeze", 0f },
+        { "RightEyeLidExpandedSqueeze", 1f },
+        { "LeftEyeLidExpandedSqueeze", 1f },
         { "LeftEyeX", 0f },
         { "RightEyeX", 0f },
         { "EyesY", 0f },
