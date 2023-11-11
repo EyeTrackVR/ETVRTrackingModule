@@ -23,7 +23,7 @@ public class V1Mapper : ImappingStategy
     {
         _logger = logger;
     }
-    
+
     public void handleOSCMessage(OSCMessage message)
     {
         var paramToMap = ImappingStategy.GetParamToMap(message.address);
@@ -34,7 +34,7 @@ public class V1Mapper : ImappingStategy
         }
     }
 
-    public void UpdateVRCFTEyeData(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes)
+    private void UpdateVRCFTEyeData(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes)
     {
         HandleEyeOpenness(ref eyeData, ref eyeShapes);
         HandleEyeGaze(ref eyeData);
@@ -47,46 +47,50 @@ public class V1Mapper : ImappingStategy
         // or making a surprised face. Therefore, we kinda have to cheat. 
         // If we detect that the values provided by ETVR are below or above a certain threshold 
         // we fake the squeeze and widen
-        
-        // todo, make this configurable via OSC commands I guess, or we switch to sockets
-        float squeezeThreshold = 0.1f;
-        float widenThreshold = 0.95f;
 
-        float baseRightEyeOpenness = _parameterValues["RightEyeLidExpandedSqueeze"];
-        float baseLeftEyeOpenness = _parameterValues["LeftEyeLidExpandedSqueeze"];
-        
-        float rightYyeOpenness = Math.Clamp(baseRightEyeOpenness, squeezeThreshold, widenThreshold);
-        float leftYyeOpenness = Math.Clamp(baseLeftEyeOpenness, squeezeThreshold, widenThreshold);
+        // todo for v2: make this configurable via OSC commands I guess, or we switch to sockets
+        const float squeezeThreshold = 0.1f;
+        const float widenThreshold = 0.95f;
 
+        var baseRightEyeOpenness = _parameterValues["RightEyeLidExpandedSqueeze"];
+        var baseLeftEyeOpenness = _parameterValues["LeftEyeLidExpandedSqueeze"];
 
-        eyeData.Right.Openness = rightYyeOpenness;
-        eyeData.Left.Openness = leftYyeOpenness;
+        _handleSingleEYeOpenness(ref eyeData.Right, ref eyeShapes, UnifiedExpressions.EyeWideRight,
+            UnifiedExpressions.EyeSquintRight, baseRightEyeOpenness, widenThreshold, squeezeThreshold);
         
-        if (baseRightEyeOpenness >= widenThreshold)
+        _handleSingleEYeOpenness(ref eyeData.Left, ref eyeShapes, UnifiedExpressions.EyeWideLeft,
+            UnifiedExpressions.EyeSquintLeft, baseLeftEyeOpenness, widenThreshold, squeezeThreshold);
+    }
+
+    private void _handleSingleEYeOpenness(
+        ref UnifiedSingleEyeData eye,
+        ref UnifiedExpressionShape[] eyeShapes,
+        UnifiedExpressions widenParam,
+        UnifiedExpressions squintParam,
+        float baseEyeOpenness,
+        float widenThreshold,
+        float squeezeThreshold
+    )
+    {
+        eye.Openness = baseEyeOpenness;
+        if (baseEyeOpenness >= widenThreshold)
         {
-            // todo, figure out how to make this more responsive
-            // todo, maybe use a curve to determine the wideness factor based
-            // todo, based on the difference between the base openness and clamped? 
-            eyeShapes[(int)UnifiedExpressions.EyeWideRight].Weight = 1;
-            eyeShapes[(int)UnifiedExpressions.EyeSquintRight].Weight = 0;
+            eyeShapes[(int)widenParam].Weight = Utils.SmoothStep(
+                widenThreshold,
+                1,
+                baseEyeOpenness
+            );
+            eyeShapes[(int)squintParam].Weight = 0;
         }
 
-        if (baseLeftEyeOpenness >= widenThreshold)
+        if (baseEyeOpenness <= squeezeThreshold)
         {
-            eyeShapes[(int)UnifiedExpressions.EyeWideLeft].Weight = 1;
-            eyeShapes[(int)UnifiedExpressions.EyeSquintLeft].Weight = 0;
-        }
-
-        if (baseLeftEyeOpenness <= squeezeThreshold)
-        {
-            eyeShapes[(int)UnifiedExpressions.EyeWideLeft].Weight = 0;
-            eyeShapes[(int)UnifiedExpressions.EyeSquintLeft].Weight = 1;
-        }
-        
-        if (baseRightEyeOpenness <= squeezeThreshold)
-        {
-            eyeShapes[(int)UnifiedExpressions.EyeWideRight].Weight = 0;
-            eyeShapes[(int)UnifiedExpressions.EyeSquintRight].Weight = 1;
+            eyeShapes[(int)widenParam].Weight = 0;
+            eyeShapes[(int)squintParam].Weight = Utils.SmoothStep(
+                squeezeThreshold,
+                0,
+                baseEyeOpenness
+            );
         }
     }
 
