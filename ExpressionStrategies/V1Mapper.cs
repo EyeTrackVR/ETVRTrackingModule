@@ -49,7 +49,7 @@ public class V1Mapper : ImappingStategy
         // we fake the squeeze and widen
 
         // todo for v2: make this configurable via OSC commands I guess, or we switch to sockets
-        const float squeezeThreshold = 0.1f;
+        const float squeezeThreshold = 0.05f;
         const float widenThreshold = 0.95f;
 
         var baseRightEyeOpenness = _parameterValues["RightEyeLidExpandedSqueeze"];
