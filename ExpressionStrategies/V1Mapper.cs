@@ -18,10 +18,12 @@ public class V1Mapper : ImappingStategy
     };
 
     private ILogger _logger;
-
-    public V1Mapper(ILogger logger)
+    public Config _config;
+    
+    public V1Mapper(ILogger logger, Config config)
     {
         _logger = logger;
+        _config = config;
     }
 
     public void handleOSCMessage(OSCMessage message)
@@ -47,22 +49,17 @@ public class V1Mapper : ImappingStategy
         // or making a surprised face. Therefore, we kinda have to cheat. 
         // If we detect that the values provided by ETVR are below or above a certain threshold 
         // we fake the squeeze and widen
-
-        // todo for v2: make this configurable via OSC commands I guess, or we switch to sockets
-        const float squeezeThreshold = 0.05f;
-        const float widenThreshold = 0.95f;
-
         var baseRightEyeOpenness = _parameterValues["RightEyeLidExpandedSqueeze"];
         var baseLeftEyeOpenness = _parameterValues["LeftEyeLidExpandedSqueeze"];
 
-        _handleSingleEYeOpenness(ref eyeData.Right, ref eyeShapes, UnifiedExpressions.EyeWideRight,
-            UnifiedExpressions.EyeSquintRight, baseRightEyeOpenness, widenThreshold, squeezeThreshold);
+        _handleSingleEyeOpenness(ref eyeData.Right, ref eyeShapes, UnifiedExpressions.EyeWideRight,
+            UnifiedExpressions.EyeSquintRight, baseRightEyeOpenness, _config.WidenThreshold, _config.SqueezeThreshold);
         
-        _handleSingleEYeOpenness(ref eyeData.Left, ref eyeShapes, UnifiedExpressions.EyeWideLeft,
-            UnifiedExpressions.EyeSquintLeft, baseLeftEyeOpenness, widenThreshold, squeezeThreshold);
+        _handleSingleEyeOpenness(ref eyeData.Left, ref eyeShapes, UnifiedExpressions.EyeWideLeft,
+            UnifiedExpressions.EyeSquintLeft, baseLeftEyeOpenness, _config.WidenThreshold, _config.SqueezeThreshold);
     }
 
-    private void _handleSingleEYeOpenness(
+    private void _handleSingleEyeOpenness(
         ref UnifiedSingleEyeData eye,
         ref UnifiedExpressionShape[] eyeShapes,
         UnifiedExpressions widenParam,
@@ -73,7 +70,7 @@ public class V1Mapper : ImappingStategy
     )
     {
         eye.Openness = baseEyeOpenness;
-        if (baseEyeOpenness >= widenThreshold)
+        if (_config.ShouldEmulateEyeWiden && baseEyeOpenness >= widenThreshold)
         {
             eyeShapes[(int)widenParam].Weight = Utils.SmoothStep(
                 widenThreshold,
@@ -83,7 +80,7 @@ public class V1Mapper : ImappingStategy
             eyeShapes[(int)squintParam].Weight = 0;
         }
 
-        if (baseEyeOpenness <= squeezeThreshold)
+        if (_config.ShouldEmulateEyeSquint && baseEyeOpenness <= squeezeThreshold)
         {
             eyeShapes[(int)widenParam].Weight = 0;
             eyeShapes[(int)squintParam].Weight = Utils.SmoothStep(

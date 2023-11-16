@@ -19,37 +19,51 @@ namespace ETVRTrackingModule
         private ILogger _logger;
 
         private volatile bool _shouldRun = true;
-        private Thread _literningThread;
+        private Thread? _listeningThread;
 
-        public OSCState State { get; private set; } = OSCState.IDLE;
-
+        public OSCState State { get; private set; }
         private ExpressionsMapper _expressionMapper;
-
-        private int _receivingPort;
-        private const int DefaultPort = 8889;
         private const int ConnectionTimeout = 10000;
 
-        public OSCManager(ILogger iLogger, ExpressionsMapper expressionsMapper, int? port = null) {
+        private Config _config;
+        
+        public OSCManager(ILogger iLogger, ExpressionsMapper expressionsMapper, ETVRConfigManager configManager) {
             _logger = iLogger;
             _expressionMapper = expressionsMapper;
-            _receivingPort = port ?? DefaultPort;
+            _config = configManager.Config; 
+            
+            configManager.RegisterListener(this.HandleConfigUpdate);
             _receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+        }
 
+        private void HandleConfigUpdate(Config config)
+        {
+            _shouldRun = false;
+
+            _listeningThread?.Join();
+            State = OSCState.IDLE;
+            _config = config;
+            
+            _shouldRun = true;
+            Start();
+        }
+
+        public void Start()
+        {
             try
             {
-                // we should make this a setting, how do settings work in vrcft?
-                _receiver.Bind(new IPEndPoint(IPAddress.Loopback, _receivingPort));
+                _receiver.Bind(new IPEndPoint(IPAddress.Loopback, _config.PortNumber));
                 _receiver.ReceiveTimeout = ConnectionTimeout;
                 State = OSCState.CONNECTED;
             }
             catch (Exception e)
             {
-                _logger.LogError($"Connecting to {_receivingPort} port failed, with error: {e}");
+                _logger.LogError($"Connecting to {_config.PortNumber} port failed, with error: {e}");
                 State = OSCState.ERROR;
             }
 
-            _literningThread = new Thread(OSCListen);
-            _literningThread.Start();
+            _listeningThread = new Thread(OSCListen);
+            _listeningThread.Start();
         }
 
         private void OSCListen()
@@ -76,7 +90,7 @@ namespace ETVRTrackingModule
             _shouldRun = false;
             _receiver.Close();
             _receiver.Dispose();
-            _literningThread.Join();
+            _listeningThread?.Join();
         }
 
         OSCMessage ParseOSCMessage(byte[] buffer, int length)

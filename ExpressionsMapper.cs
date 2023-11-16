@@ -6,11 +6,13 @@ namespace ETVRTrackingModule
     public class ExpressionsMapper
     {
         private ImappingStategy _mappingStrategy;
+        private ETVRConfigManager _config;
         
         ILogger _logger;
-        public ExpressionsMapper(ILogger logger) 
+        public ExpressionsMapper(ILogger logger, ETVRConfigManager config) 
         {
             _logger = logger;
+            _config = config;
             _mappingStrategy = new V2Mapper(_logger);
         }
         public void MapMessage(OSCMessage msg)
@@ -18,7 +20,7 @@ namespace ETVRTrackingModule
             if (!msg.success)
                 return;
             
-            var nextStrategy =  IsV2Param(msg) ? (ImappingStategy) new V2Mapper(_logger) : new V1Mapper(_logger);
+            var nextStrategy =  IsV2Param(msg) ? (ImappingStategy) new V2Mapper(_logger) : new V1Mapper(_logger, _config.Config);
             
             if (_mappingStrategy.GetType() != nextStrategy.GetType())
             {
