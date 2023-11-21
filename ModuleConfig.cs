@@ -66,6 +66,7 @@ public class ETVRConfigManager
         try
         {
             _config = JsonSerializer.Deserialize<Config>(jsonData);
+            NotifyListeners();
         }
         catch (JsonException)
         {
@@ -81,6 +82,18 @@ public class ETVRConfigManager
         File.WriteAllText(_configFilePath, jsonData);
     }
 
+    public void UpdateConfig<T>(string fieldName, T value)
+    {
+        var field = _config.GetType().GetField(fieldName);
+        
+        if (field is null) return;
+        
+        var type = Nullable.GetUnderlyingType(field.FieldType) ?? field.FieldType;
+        var safeValue = Convert.ChangeType(value, type);
+        field.SetValue(_config, safeValue);
+        NotifyListeners();
+    }
+    
     private void NotifyListeners()
     {
         foreach (var listener in _listeners)

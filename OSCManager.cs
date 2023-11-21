@@ -25,12 +25,12 @@ namespace ETVRTrackingModule
         private ExpressionsMapper _expressionMapper;
         private const int ConnectionTimeout = 10000;
 
-        private Config _config;
+        private ETVRConfigManager _config;
         
         public OSCManager(ILogger iLogger, ExpressionsMapper expressionsMapper, ETVRConfigManager configManager) {
             _logger = iLogger;
             _expressionMapper = expressionsMapper;
-            _config = configManager.Config; 
+            _config = configManager; 
             
             configManager.RegisterListener(this.HandleConfigUpdate);
             _receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
@@ -42,7 +42,6 @@ namespace ETVRTrackingModule
 
             _listeningThread?.Join();
             State = OSCState.IDLE;
-            _config = config;
             
             _shouldRun = true;
             Start();
@@ -52,13 +51,13 @@ namespace ETVRTrackingModule
         {
             try
             {
-                _receiver.Bind(new IPEndPoint(IPAddress.Loopback, _config.PortNumber));
+                _receiver.Bind(new IPEndPoint(IPAddress.Loopback, _config.Config.PortNumber));
                 _receiver.ReceiveTimeout = ConnectionTimeout;
                 State = OSCState.CONNECTED;
             }
             catch (Exception e)
             {
-                _logger.LogError($"Connecting to {_config.PortNumber} port failed, with error: {e}");
+                _logger.LogError($"Connecting to {_config.Config.PortNumber} port failed, with error: {e}");
                 State = OSCState.ERROR;
             }
 
@@ -77,7 +76,7 @@ namespace ETVRTrackingModule
                     {
                         var length = _receiver.Receive(buffer);
                         OSCMessage msg = ParseOSCMessage(buffer, length);
-                        _expressionMapper.MapMessage(msg);
+                        handleOSCMessage(msg);
                     }
                 }
                 catch (Exception){}
@@ -93,6 +92,16 @@ namespace ETVRTrackingModule
             _listeningThread?.Join();
         }
 
+        void handleOSCMessage(OSCMessage oscMessage)
+        {
+            if(!oscMessage.address.Contains("/command/"))
+                _expressionMapper.MapMessage(oscMessage);
+
+            var parts = oscMessage.address.Split("/");
+            // todo make a proper parser later
+            _config.UpdateConfig(parts[3], oscMessage.value);
+        }
+        
         OSCMessage ParseOSCMessage(byte[] buffer, int length)
         {
             OSCMessage msg = new OSCMessage();
