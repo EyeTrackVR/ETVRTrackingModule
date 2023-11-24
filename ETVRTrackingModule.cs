@@ -7,7 +7,7 @@ namespace ETVRTrackingModule
 {
     public class ETVRTrackingModule : ExtTrackingModule
     {
-        private OSCManager? _OSCManager;
+        private OSCManager? _oscManager;
         private ExpressionsMapper? _expressionMapper;
         public override (bool SupportsEye, bool SupportsExpression) Supported => (true, true);
         public override (bool eyeSuccess, bool expressionSuccess) Initialize(bool eyeAvailable, bool expressionAvailable)
@@ -20,21 +20,20 @@ namespace ETVRTrackingModule
             ETVRConfigManager config = new ETVRConfigManager(currentPath, Logger);
             config.LoadConfig();
             
-            _expressionMapper = new ExpressionsMapper(Logger, config);
-            _OSCManager = new OSCManager(Logger, _expressionMapper, config);
-            _OSCManager.Start();
+            _expressionMapper = new ExpressionsMapper(Logger, ref config);
+            _oscManager = new OSCManager(Logger, _expressionMapper, ref config);
+            _oscManager.Start();
+
+
+            if (_oscManager.State == OSCState.CONNECTED) return (true, true);
             
-            
-            if (_OSCManager.State != OSCState.CONNECTED) {
-                Logger.LogError("ETVR Module could not connect to the specified port.");
-                return (false, false);
-            }
-            return (true, true);
+            Logger.LogError("ETVR Module could not connect to the specified port.");
+            return (false, false);
         }
 
         public override void Teardown()
         {
-            _OSCManager?.TearDown();
+            _oscManager?.TearDown();
         }
 
         public override void Update()

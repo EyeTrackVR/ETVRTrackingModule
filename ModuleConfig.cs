@@ -87,10 +87,17 @@ public class ETVRConfigManager
         var field = _config.GetType().GetField(fieldName);
         
         if (field is null) return;
+
+        object boxedConfig = _config;
         
         var type = Nullable.GetUnderlyingType(field.FieldType) ?? field.FieldType;
         var safeValue = Convert.ChangeType(value, type);
-        field.SetValue(_config, safeValue);
+        
+        _logger.LogInformation($"[UPDATE] updating field {field} to {safeValue}");
+        field.SetValue(boxedConfig, safeValue);
+        _config = (Config)boxedConfig;
+        
+        SaveConfig();
         NotifyListeners();
     }
     

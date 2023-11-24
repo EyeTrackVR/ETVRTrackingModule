@@ -13,42 +13,39 @@ namespace ETVRTrackingModule
 
     public class OSCManager
     {
-        private Socket _receiver;
+        private Socket? _receiver;
         //private Socket _sender;
 
         private ILogger _logger;
 
-        private volatile bool _shouldRun = true;
+        private readonly ManualResetEvent _terminate = new(false);
         private Thread? _listeningThread;
 
         public OSCState State { get; private set; }
-        private ExpressionsMapper _expressionMapper;
+        private readonly ExpressionsMapper _expressionMapper;
         private const int ConnectionTimeout = 10000;
 
-        private ETVRConfigManager _config;
+        private readonly ETVRConfigManager _config;
         
-        public OSCManager(ILogger iLogger, ExpressionsMapper expressionsMapper, ETVRConfigManager configManager) {
+        public OSCManager(ILogger iLogger, ExpressionsMapper expressionsMapper, ref ETVRConfigManager configManager) {
             _logger = iLogger;
             _expressionMapper = expressionsMapper;
             _config = configManager; 
-            
             configManager.RegisterListener(this.HandleConfigUpdate);
-            _receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
         }
 
         private void HandleConfigUpdate(Config config)
         {
-            _shouldRun = false;
-
-            _listeningThread?.Join();
+            _terminate.Set();
+            _receiver?.Dispose();
             State = OSCState.IDLE;
-            
-            _shouldRun = true;
+            _terminate.Reset();
             Start();
         }
 
         public void Start()
         {
+            _receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             try
             {
                 _receiver.Bind(new IPEndPoint(IPAddress.Loopback, _config.Config.PortNumber));
@@ -68,41 +65,73 @@ namespace ETVRTrackingModule
         private void OSCListen()
         {
             var buffer = new byte[4096];
-            while (_shouldRun) 
+            while (!_terminate.WaitOne(0)) 
             {
                 try
                 {
+                    if (_receiver is null)
+                    {
+                        continue;
+                    }
+                    
                     if (_receiver.IsBound)
                     {
                         var length = _receiver.Receive(buffer);
                         OSCMessage msg = ParseOSCMessage(buffer, length);
-                        handleOSCMessage(msg);
+                        HandleOscMessage(msg);
                     }
                 }
-                catch (Exception){}
+                catch (Exception)
+                {
+                    // we purposefully ignore any exceptions
+                }
             }
         }
 
         public void TearDown()
         {
-            _logger.LogInformation("ETVR module closing");
-            _shouldRun = false;
-            _receiver.Close();
-            _receiver.Dispose();
+            _terminate.Set();
+            _receiver?.Close();
+            _receiver?.Dispose();
             _listeningThread?.Join();
         }
 
-        void handleOSCMessage(OSCMessage oscMessage)
+        private void HandleOscMessage(OSCMessage oscMessage)
         {
-            if(!oscMessage.address.Contains("/command/"))
-                _expressionMapper.MapMessage(oscMessage);
+            if (!oscMessage.address.Contains("/command/"))
+            {
+                HandleExpressionMessage(oscMessage);
+                return;
+            }
+            HandleSettingsMessage(oscMessage);
+        }
 
+        private void HandleExpressionMessage(OSCMessage oscMessage)
+        {
+            _expressionMapper.MapMessage(oscMessage);
+        }
+
+        private void HandleSettingsMessage(OSCMessage oscMessage)
+        {
+            /***
+             * message we're expecting looks like
+             * /command/set/field/ value
+             * which translates to
+             * [empty] command set field
+             * after splitting
+             * we're already getting the value in OSCMessage DTO
+             * we also know that it is a command, let's verify what to set and do it. 
+            ***/
             var parts = oscMessage.address.Split("/");
-            // todo make a proper parser later
+            
+            if (parts[2].ToLower() != "set")
+            {
+                return;
+            }
             _config.UpdateConfig(parts[3], oscMessage.value);
         }
-        
-        OSCMessage ParseOSCMessage(byte[] buffer, int length)
+
+        private OSCMessage ParseOSCMessage(byte[] buffer, int length)
         {
             OSCMessage msg = new OSCMessage();
             int currentStep = 0;

@@ -9,7 +9,7 @@ namespace ETVRTrackingModule
         private ETVRConfigManager _config;
         
         ILogger _logger;
-        public ExpressionsMapper(ILogger logger, ETVRConfigManager config) 
+        public ExpressionsMapper(ILogger logger, ref ETVRConfigManager config) 
         {
             _logger = logger;
             _config = config;
