@@ -13,13 +13,13 @@ public class V2Mapper : ImappingStategy
         "EyeY",
         "EyeLid"
     };
-    
+
     private Dictionary<string, float> _parameterValues = new()
     {
         { "EyeX", 0f },
         { "EyeY", 0f },
         { "EyeLid", 1f },
-        
+
         { "EyeLeftX", 0f },
         { "EyeLeftY", 0f },
         { "EyeRightX", 0f },
@@ -27,19 +27,22 @@ public class V2Mapper : ImappingStategy
         { "EyeLidLeft", 1f },
         { "EyeLidRight", 1f },
     };
-    
-    private ILogger _logger;
 
-    public V2Mapper(ILogger logger)
+    private ILogger _logger;
+    private readonly Config _config;
+
+    public V2Mapper(ILogger logger, ref Config config)
     {
+        _config = config;
         _logger = logger;
     }
+
     public void handleOSCMessage(OSCMessage message)
     {
         string paramToMap = ImappingStategy.GetParamToMap(message.address);
         if (!_parameterValues.ContainsKey(paramToMap))
             return;
-        
+
         _parameterValues[paramToMap] = message.value;
         var singleEyeMode = _singleEyeParamNames.Contains(paramToMap);
         UpdateVRCFTEyeData(ref UnifiedTracking.Data.Eye, ref UnifiedTracking.Data.Shapes, singleEyeMode);
@@ -50,7 +53,7 @@ public class V2Mapper : ImappingStategy
         HandleEyeGaze(ref eyeData, isSingleEyeMode);
         HandleEyeOpenness(ref eyeData, ref eyeShapes, isSingleEyeMode);
     }
-    
+
     private void HandleEyeGaze(ref UnifiedEyeData eyeData, bool isSingleEyeMode)
     {
         if (isSingleEyeMode)
@@ -65,18 +68,48 @@ public class V2Mapper : ImappingStategy
         eyeData.Right.Gaze = new Vector2(_parameterValues["EyeRightX"], _parameterValues["EyeRightY"]);
     }
 
-    private void HandleEyeOpenness(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes, bool isSingleEyeMode = false)
+    private void HandleEyeOpenness(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes,
+        bool isSingleEyeMode = false)
     {
         if (isSingleEyeMode)
         {
             var eyeOpenness = _parameterValues["EyeLid"];
-            
-            eyeData.Left.Openness = eyeOpenness;
-            eyeData.Right.Openness = eyeOpenness;
+
+            HandleSingleEyeOpenness(ref eyeData.Left, eyeOpenness, _config.WidenThreshold, _config.SqueezeThreshold);
+            HandleSingleEyeOpenness(ref eyeData.Right, eyeOpenness, _config.WidenThreshold, _config.SqueezeThreshold);
             return;
         }
-        
-        eyeData.Left.Openness = _parameterValues["EyeLidLeft"];
-        eyeData.Right.Openness = _parameterValues["EyeLidRight"];
+
+        HandleSingleEyeOpenness(ref eyeData.Left, _parameterValues["EyeLidLeft"], _config.WidenThreshold,
+            _config.SqueezeThreshold);
+        HandleSingleEyeOpenness(ref eyeData.Right, _parameterValues["EyeLidRight"], _config.WidenThreshold,
+            _config.SqueezeThreshold);
+    }
+
+    private void HandleSingleEyeOpenness(
+        ref UnifiedSingleEyeData eyeData,
+        float baseOpenness,
+        float widenThreshold,
+        float squeezeThreshold
+    )
+    {
+        eyeData.Openness = baseOpenness;
+        if (_config.ShouldEmulateEyeWiden && baseOpenness >= widenThreshold)
+        {
+            eyeData.Openness = Utils.SmoothStep(
+                widenThreshold,
+                1.4f,
+                baseOpenness
+            );
+        }
+
+        if (_config.ShouldEmulateEyeSquint && baseOpenness <= squeezeThreshold)
+        {
+            eyeData.Openness = Utils.SmoothStep(
+                squeezeThreshold,
+                -1.4f,
+                baseOpenness
+            );
+        }
     }
 }
