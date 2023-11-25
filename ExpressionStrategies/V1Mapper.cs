@@ -18,9 +18,9 @@ public class V1Mapper : ImappingStategy
     };
 
     private ILogger _logger;
-    public Config _config;
-    
-    public V1Mapper(ILogger logger, Config config)
+    private readonly Config _config;
+
+    public V1Mapper(ILogger logger, ref Config config)
     {
         _logger = logger;
         _config = config;
@@ -54,7 +54,7 @@ public class V1Mapper : ImappingStategy
 
         _handleSingleEyeOpenness(ref eyeData.Right, ref eyeShapes, UnifiedExpressions.EyeWideRight,
             UnifiedExpressions.EyeSquintRight, baseRightEyeOpenness, _config.WidenThreshold, _config.SqueezeThreshold);
-        
+
         _handleSingleEyeOpenness(ref eyeData.Left, ref eyeShapes, UnifiedExpressions.EyeWideLeft,
             UnifiedExpressions.EyeSquintLeft, baseLeftEyeOpenness, _config.WidenThreshold, _config.SqueezeThreshold);
     }
