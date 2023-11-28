@@ -23,8 +23,7 @@ namespace ETVRTrackingModule
             _expressionMapper = new ExpressionsMapper(Logger, ref config);
             _oscManager = new OSCManager(Logger, _expressionMapper, ref config);
             _oscManager.Start();
-
-
+            
             if (_oscManager.State == OSCState.CONNECTED) return (true, true);
             
             Logger.LogError("ETVR Module could not connect to the specified port.");
