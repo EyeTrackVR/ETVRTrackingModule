@@ -1,11 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
 using VRCFaceTracking;
 using VRCFaceTracking.Core.Params.Data;
+using VRCFaceTracking.Core.Params.Expressions;
 using VRCFaceTracking.Core.Types;
 
 namespace ETVRTrackingModule.ExpressionStrategies;
 
-public class V2Mapper : ImappingStategy
+public class V2Mapper : BaseParamMapper
 {
     private readonly string[] _singleEyeParamNames =
     {
@@ -28,18 +29,11 @@ public class V2Mapper : ImappingStategy
         { "EyeLidRight", 1f },
     };
 
-    private ILogger _logger;
-    private readonly Config _config;
+    public V2Mapper(ILogger logger, ref Config config) : base(logger, ref config) { }
 
-    public V2Mapper(ILogger logger, ref Config config)
+    public override void handleOSCMessage(OSCMessage message)
     {
-        _config = config;
-        _logger = logger;
-    }
-
-    public void handleOSCMessage(OSCMessage message)
-    {
-        string paramToMap = ImappingStategy.GetParamToMap(message.address);
+        string paramToMap = GetParamToMap(message.address);
         if (!_parameterValues.ContainsKey(paramToMap))
             return;
 

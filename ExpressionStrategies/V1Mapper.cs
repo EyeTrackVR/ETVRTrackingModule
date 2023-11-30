@@ -6,7 +6,7 @@ using VRCFaceTracking.Core.Types;
 
 namespace ETVRTrackingModule.ExpressionStrategies;
 
-public class V1Mapper : ImappingStategy
+public class V1Mapper : BaseParamMapper
 {
     private Dictionary<string, float> _parameterValues = new()
     {
@@ -16,19 +16,12 @@ public class V1Mapper : ImappingStategy
         { "RightEyeX", 0f },
         { "EyesY", 0f },
     };
+    
+    public V1Mapper(ILogger logger, ref Config config) : base(logger, ref config) { }
 
-    private ILogger _logger;
-    private readonly Config _config;
-
-    public V1Mapper(ILogger logger, ref Config config)
+    public override void handleOSCMessage(OSCMessage message)
     {
-        _logger = logger;
-        _config = config;
-    }
-
-    public void handleOSCMessage(OSCMessage message)
-    {
-        var paramToMap = ImappingStategy.GetParamToMap(message.address);
+        var paramToMap = GetParamToMap(message.address);
         if (_parameterValues.ContainsKey(paramToMap))
         {
             _parameterValues[paramToMap] = message.value;
@@ -120,40 +113,5 @@ public class V1Mapper : ImappingStategy
             _config.WidenThreshold,
             _config.SqueezeThreshold
         );
-    }
-
-    private void _emulateEyeBrow(
-        ref UnifiedExpressionShape[] eyeShapes,
-        UnifiedExpressions eyebrowExpressionLowerrer,
-        UnifiedExpressions eyebrowExpressionUpper,
-        float baseEyeOpenness,
-        float widenThreshold,
-        float squeezeThreshold)
-    {
-        if (!_config.ShouldEmulateEyebrows)
-            return;
-
-        if (baseEyeOpenness >= widenThreshold)
-        {
-            eyeShapes[(int)eyebrowExpressionLowerrer].Weight = Utils.SmoothStep(
-                widenThreshold,
-                1,
-                baseEyeOpenness
-            );
-        }
-
-        if (baseEyeOpenness <= squeezeThreshold)
-        {
-            eyeShapes[(int)eyebrowExpressionUpper].Weight = Utils.SmoothStep(
-                squeezeThreshold,
-                1,
-                baseEyeOpenness
-            );
-            eyeShapes[(int)UnifiedExpressions.BrowLowererLeft].Weight = Utils.SmoothStep(
-                squeezeThreshold,
-                1,
-                baseEyeOpenness
-            );
-        }
     }
 }

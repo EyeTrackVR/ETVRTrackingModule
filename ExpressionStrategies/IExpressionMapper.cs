@@ -2,13 +2,7 @@
 
 namespace ETVRTrackingModule.ExpressionStrategies;
 
-public interface ImappingStategy
+public interface IMappingStategy
 {
-    public static string GetParamToMap(string oscAddress)
-    {
-        var oscUrlSplit = oscAddress.Split("/");
-        return oscUrlSplit[^1];
-    }
-    
     public void handleOSCMessage(OSCMessage message);
 }
