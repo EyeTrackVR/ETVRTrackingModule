@@ -46,6 +46,7 @@ public class V2Mapper : BaseParamMapper
     {
         HandleEyeGaze(ref eyeData, isSingleEyeMode);
         HandleEyeOpenness(ref eyeData, ref eyeShapes, isSingleEyeMode);
+        EmulateEyebrows(ref eyeShapes, isSingleEyeMode);
     }
 
     private void HandleEyeGaze(ref UnifiedEyeData eyeData, bool isSingleEyeMode)
@@ -105,5 +106,54 @@ public class V2Mapper : BaseParamMapper
                 baseOpenness
             );
         }
+    }
+
+    private void EmulateEyebrows(ref UnifiedExpressionShape[] eyeShapes, bool isSingleEyeMode = false)
+    {
+        if (isSingleEyeMode)
+        {
+            var eyeOpenness = _parameterValues["EyeLid"];
+
+            _emulateEyeBrow(
+                ref eyeShapes,
+                UnifiedExpressions.BrowLowererRight,
+                UnifiedExpressions.BrowOuterUpRight,
+                eyeOpenness,
+                _config.WidenThreshold,
+                _config.SqueezeThreshold
+            );
+
+            _emulateEyeBrow(
+                ref eyeShapes,
+                UnifiedExpressions.BrowLowererLeft,
+                UnifiedExpressions.BrowOuterUpLeft,
+                eyeOpenness,
+                _config.WidenThreshold,
+                _config.SqueezeThreshold
+            );
+
+            return;
+        }
+
+        var baseRightEyeOpenness = _parameterValues["RightEyeLidExpandedSqueeze"];
+        var baseLeftEyeOpenness = _parameterValues["LeftEyeLidExpandedSqueeze"];
+
+        _emulateEyeBrow(
+            ref eyeShapes,
+            UnifiedExpressions.BrowLowererRight,
+            UnifiedExpressions.BrowOuterUpRight,
+            baseRightEyeOpenness,
+            _config.WidenThreshold,
+            _config.SqueezeThreshold
+        );
+
+        _emulateEyeBrow(
+            ref eyeShapes,
+            UnifiedExpressions.BrowLowererLeft,
+            UnifiedExpressions.BrowOuterUpLeft,
+            baseLeftEyeOpenness,
+            _config.WidenThreshold,
+            _config.SqueezeThreshold
+        );
     }
 }
