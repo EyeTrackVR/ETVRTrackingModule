@@ -16,9 +16,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Assets\ETVRLogo.png">
+    <None Remove="Assets\ETVRLogo.png" />
+    <EmbeddedResource Include="Assets\ETVRLogo.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    </EmbeddedResource>
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
