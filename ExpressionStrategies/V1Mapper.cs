@@ -101,8 +101,8 @@ public class V1Mapper : BaseParamMapper
             UnifiedExpressions.BrowLowererRight,
             UnifiedExpressions.BrowOuterUpRight,
             baseRightEyeOpenness,
-            _config.WidenThreshold,
-            _config.SqueezeThreshold
+            _config.EyebrowThresholdRising,
+            _config.EyebrowThresholdLowering
         );
         
         _emulateEyeBrow(
@@ -110,8 +110,8 @@ public class V1Mapper : BaseParamMapper
             UnifiedExpressions.BrowLowererLeft,
             UnifiedExpressions.BrowOuterUpLeft,
             baseLeftEyeOpenness,
-            _config.WidenThreshold,
-            _config.SqueezeThreshold
+            _config.EyebrowThresholdRising,
+            _config.EyebrowThresholdLowering
         );
     }
 }

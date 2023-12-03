@@ -13,7 +13,8 @@ public struct Config
     [JsonInclude] public bool ShouldEmulateEyebrows;
     [JsonInclude] public float SqueezeThreshold;
     [JsonInclude] public float WidenThreshold;
-    [JsonInclude] public float EyebrowThreshold;
+    [JsonInclude] public float EyebrowThresholdRising;
+    [JsonInclude] public float EyebrowThresholdLowering;
     
     public static Config Default
     {
@@ -25,7 +26,8 @@ public struct Config
             ShouldEmulateEyebrows = true,
             SqueezeThreshold = 0.05f,
             WidenThreshold = 0.95f,
-            EyebrowThreshold = 0.9f,
+            EyebrowThresholdRising = 0.9f,
+            EyebrowThresholdLowering = 0.05f,
         };
     }
 }
