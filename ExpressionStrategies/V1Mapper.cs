@@ -16,8 +16,10 @@ public class V1Mapper : BaseParamMapper
         { "RightEyeX", 0f },
         { "EyesY", 0f },
     };
-    
-    public V1Mapper(ILogger logger, ref Config config) : base(logger, ref config) { }
+
+    public V1Mapper(ILogger logger, ref Config config) : base(logger, ref config)
+    {
+    }
 
     public override void handleOSCMessage(OSCMessage message)
     {
@@ -41,7 +43,7 @@ public class V1Mapper : BaseParamMapper
         eyeData.Right.Gaze = new Vector2(_parameterValues["RightEyeX"], _parameterValues["EyesY"]);
         eyeData.Left.Gaze = new Vector2(_parameterValues["LeftEyeX"], _parameterValues["EyesY"]);
     }
-    
+
     private void HandleEyeOpenness(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes)
     {
         // so how it works, currently we cannot output values above 1.0 and below 0.0
@@ -53,10 +55,12 @@ public class V1Mapper : BaseParamMapper
         var baseLeftEyeOpenness = _parameterValues["LeftEyeLidExpandedSqueeze"];
 
         _handleSingleEyeOpenness(ref eyeData.Right, ref eyeShapes, UnifiedExpressions.EyeWideRight,
-            UnifiedExpressions.EyeSquintRight, baseRightEyeOpenness, _config.WidenThreshold, _config.SqueezeThreshold);
+            UnifiedExpressions.EyeSquintRight, baseRightEyeOpenness, _config.WidenThreshold, _config.SqueezeThreshold,
+            _config.MaxWidenThreshold, _config.MaxSqueezeThreshold);
 
         _handleSingleEyeOpenness(ref eyeData.Left, ref eyeShapes, UnifiedExpressions.EyeWideLeft,
-            UnifiedExpressions.EyeSquintLeft, baseLeftEyeOpenness, _config.WidenThreshold, _config.SqueezeThreshold);
+            UnifiedExpressions.EyeSquintLeft, baseLeftEyeOpenness, _config.WidenThreshold, _config.SqueezeThreshold,
+            _config.MaxWidenThreshold, _config.MaxSqueezeThreshold);
     }
 
     private void _handleSingleEyeOpenness(
@@ -66,7 +70,9 @@ public class V1Mapper : BaseParamMapper
         UnifiedExpressions squintParam,
         float baseEyeOpenness,
         float widenThreshold,
-        float squeezeThreshold
+        float squeezeThreshold,
+        float maxWidenThreshold,
+        float maxSqueezeThreshold
     )
     {
         eye.Openness = baseEyeOpenness;
@@ -74,7 +80,7 @@ public class V1Mapper : BaseParamMapper
         {
             eyeShapes[(int)widenParam].Weight = Utils.SmoothStep(
                 widenThreshold,
-                1,
+                maxWidenThreshold,
                 baseEyeOpenness
             );
             eyeShapes[(int)squintParam].Weight = 0;
@@ -85,7 +91,7 @@ public class V1Mapper : BaseParamMapper
             eyeShapes[(int)widenParam].Weight = 0;
             eyeShapes[(int)squintParam].Weight = Utils.SmoothStep(
                 squeezeThreshold,
-                0,
+                maxSqueezeThreshold,
                 baseEyeOpenness
             );
         }
@@ -95,7 +101,7 @@ public class V1Mapper : BaseParamMapper
     {
         var baseRightEyeOpenness = _parameterValues["RightEyeLidExpandedSqueeze"];
         var baseLeftEyeOpenness = _parameterValues["LeftEyeLidExpandedSqueeze"];
-        
+
         _emulateEyeBrow(
             ref eyeShapes,
             UnifiedExpressions.BrowLowererRight,
@@ -104,7 +110,7 @@ public class V1Mapper : BaseParamMapper
             _config.EyebrowThresholdRising,
             _config.EyebrowThresholdLowering
         );
-        
+
         _emulateEyeBrow(
             ref eyeShapes,
             UnifiedExpressions.BrowLowererLeft,

@@ -29,7 +29,9 @@ public class V2Mapper : BaseParamMapper
         { "EyeLidRight", 1f },
     };
 
-    public V2Mapper(ILogger logger, ref Config config) : base(logger, ref config) { }
+    public V2Mapper(ILogger logger, ref Config config) : base(logger, ref config)
+    {
+    }
 
     public override void handleOSCMessage(OSCMessage message)
     {
@@ -42,7 +44,8 @@ public class V2Mapper : BaseParamMapper
         UpdateVRCFTEyeData(ref UnifiedTracking.Data.Eye, ref UnifiedTracking.Data.Shapes, singleEyeMode);
     }
 
-    private void UpdateVRCFTEyeData(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes, bool isSingleEyeMode = false)
+    private void UpdateVRCFTEyeData(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes,
+        bool isSingleEyeMode = false)
     {
         HandleEyeGaze(ref eyeData, isSingleEyeMode);
         HandleEyeOpenness(ref eyeData, ref eyeShapes, isSingleEyeMode);
@@ -70,22 +73,26 @@ public class V2Mapper : BaseParamMapper
         {
             var eyeOpenness = _parameterValues["EyeLid"];
 
-            HandleSingleEyeOpenness(ref eyeData.Left, eyeOpenness, _config.WidenThreshold, _config.SqueezeThreshold);
-            HandleSingleEyeOpenness(ref eyeData.Right, eyeOpenness, _config.WidenThreshold, _config.SqueezeThreshold);
+            HandleSingleEyeOpenness(ref eyeData.Left, eyeOpenness, _config.WidenThreshold, _config.SqueezeThreshold,
+                _config.MaxOpennessThreshold, _config.MaxSquintThreshold);
+            HandleSingleEyeOpenness(ref eyeData.Right, eyeOpenness, _config.WidenThreshold, _config.SqueezeThreshold,
+                _config.MaxOpennessThreshold, _config.MaxSquintThreshold);
             return;
         }
 
         HandleSingleEyeOpenness(ref eyeData.Left, _parameterValues["EyeLidLeft"], _config.WidenThreshold,
-            _config.SqueezeThreshold);
+            _config.SqueezeThreshold, _config.MaxOpennessThreshold, _config.MaxSquintThreshold);
         HandleSingleEyeOpenness(ref eyeData.Right, _parameterValues["EyeLidRight"], _config.WidenThreshold,
-            _config.SqueezeThreshold);
+            _config.SqueezeThreshold, _config.MaxOpennessThreshold, _config.MaxSquintThreshold);
     }
 
     private void HandleSingleEyeOpenness(
         ref UnifiedSingleEyeData eyeData,
         float baseOpenness,
         float widenThreshold,
-        float squeezeThreshold
+        float squeezeThreshold,
+        float maxOpennessThreshold,
+        float maxSquintThreshold
     )
     {
         eyeData.Openness = baseOpenness;
@@ -93,7 +100,7 @@ public class V2Mapper : BaseParamMapper
         {
             eyeData.Openness = Utils.SmoothStep(
                 widenThreshold,
-                1.4f,
+                maxOpennessThreshold,
                 baseOpenness
             );
         }
@@ -102,7 +109,7 @@ public class V2Mapper : BaseParamMapper
         {
             eyeData.Openness = Utils.SmoothStep(
                 squeezeThreshold,
-                -1.4f,
+                maxSquintThreshold,
                 baseOpenness
             );
         }

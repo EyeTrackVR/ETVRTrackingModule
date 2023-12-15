@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
-namespace  ETVRTrackingModule;
+namespace ETVRTrackingModule;
 
 public struct Config
 {
@@ -15,34 +15,72 @@ public struct Config
     [JsonInclude] public float WidenThreshold;
     [JsonInclude] public float EyebrowThresholdRising;
     [JsonInclude] public float EyebrowThresholdLowering;
-    
+
+    private float _maxWidenThreshold;
+
+    [JsonInclude]
+    public float MaxWidenThreshold
+    {
+        get => _maxWidenThreshold;
+        set => _maxWidenThreshold = Math.Clamp(value, 0, 1);
+    }
+
+    private float _maxSqueezeThreshold;
+
+    [JsonInclude]
+    public float MaxSqueezeThreshold
+    {
+        get => _maxSqueezeThreshold;
+        set => _maxSqueezeThreshold = Math.Clamp(value, 0, 1);
+    }
+
+
+    // used for VRCFT v2 params
+    private float _maxOpennessThreshold;
+
+    [JsonInclude]
+    public float MaxOpennessThreshold
+    {
+        get => _maxOpennessThreshold;
+        set => _maxOpennessThreshold = Math.Clamp(value, 0, 2f);
+    }
+
+    private float _maxSquintThreshold;
+
+    [JsonInclude]
+    public float MaxSquintThreshold
+    {
+        get => _maxSquintThreshold;
+        set => _maxSquintThreshold = Math.Clamp(value, -2f, 0);
+    }
+
     public static Config Default
     {
-        get => new () 
+        get => new()
         {
             PortNumber = 8889,
-            ShouldEmulateEyeWiden = true, 
+            ShouldEmulateEyeWiden = true,
             ShouldEmulateEyeSquint = true,
             ShouldEmulateEyebrows = true,
             SqueezeThreshold = 0.05f,
             WidenThreshold = 0.95f,
             EyebrowThresholdRising = 0.9f,
             EyebrowThresholdLowering = 0.05f,
+            MaxWidenThreshold = 1,
+            MaxSqueezeThreshold = 0,
+            MaxOpennessThreshold = 1.4f,
+            MaxSquintThreshold = -1.4f,
         };
     }
 }
-
 
 public class ETVRConfigManager
 {
     private readonly string _configurationFileName = "ETVRModuleConfig.json";
     private readonly string _configFilePath;
     private Config _config = Config.Default;
-    public Config Config
-    {
-        get => _config; 
-    }
-    
+    public Config Config => _config;
+
     private List<Action<Config>> _listeners;
     private ILogger _logger;
 
@@ -62,7 +100,6 @@ public class ETVRConfigManager
             return;
         }
         
-        
         _logger.LogInformation($"Loading config from {_configFilePath}");
         var jsonData = File.ReadAllText(_configFilePath);
         try
@@ -74,7 +111,7 @@ public class ETVRConfigManager
         {
             _logger.LogInformation("Something went wrong during config decoding. Overwriting it with defaults");
             SaveConfig();
-        }    
+        }
     }
 
     private void SaveConfig()
@@ -87,22 +124,22 @@ public class ETVRConfigManager
     public void UpdateConfig<T>(string fieldName, T value)
     {
         var field = _config.GetType().GetField(fieldName);
-        
+
         if (field is null) return;
 
         object boxedConfig = _config;
-        
+
         var type = Nullable.GetUnderlyingType(field.FieldType) ?? field.FieldType;
         var safeValue = Convert.ChangeType(value, type);
-        
+
         _logger.LogInformation($"[UPDATE] updating field {field} to {safeValue}");
         field.SetValue(boxedConfig, safeValue);
         _config = (Config)boxedConfig;
-        
+
         SaveConfig();
         NotifyListeners();
     }
-    
+
     private void NotifyListeners()
     {
         foreach (var listener in _listeners)
