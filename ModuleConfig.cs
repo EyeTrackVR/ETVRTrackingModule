@@ -11,48 +11,37 @@ public struct Config
     [JsonInclude] public bool ShouldEmulateEyeWiden;
     [JsonInclude] public bool ShouldEmulateEyeSquint;
     [JsonInclude] public bool ShouldEmulateEyebrows;
-    [JsonInclude] public float SqueezeThreshold;
-    [JsonInclude] public float WidenThreshold;
+
+    [JsonIgnore] private float[] _widenSqueezeThreshold;
+
+    [JsonInclude]
+    public float[] WidenSqueezeThreshold
+    {
+        get => _widenSqueezeThreshold;
+        set { _widenSqueezeThreshold = new[] { Math.Clamp(value[0], 0f, 1f), Math.Clamp(value[1], 0f, 1f) }; }
+    }
+
+    [JsonIgnore] private float[] _maxWidenSqueezeThresholdV1;
+
+    [JsonInclude]
+    public float[] MaxWidenSqueezeThresholdV1
+    {
+        get => _maxWidenSqueezeThresholdV1;
+        set { _maxWidenSqueezeThresholdV1 = new[] { Math.Clamp(value[0], 0f, 1f), Math.Clamp(value[1], 0f, 1f) }; }
+    }
+
+
+    [JsonIgnore] private float[] _maxWidenSqueezeThresholdV2;
+
+    [JsonInclude]
+    public float[] MaxWidenSqueezeThresholdV2
+    {
+        get => _maxWidenSqueezeThresholdV2;
+        set { _maxWidenSqueezeThresholdV2 = new[] { Math.Clamp(value[0], -1.4f, 0), Math.Clamp(value[1], 0, 1.4f) }; }
+    }
+
     [JsonInclude] public float EyebrowThresholdRising;
     [JsonInclude] public float EyebrowThresholdLowering;
-
-    private float _maxWidenThreshold;
-
-    [JsonInclude]
-    public float MaxWidenThreshold
-    {
-        get => _maxWidenThreshold;
-        set => _maxWidenThreshold = Math.Clamp(value, 0, 1);
-    }
-
-    private float _maxSqueezeThreshold;
-
-    [JsonInclude]
-    public float MaxSqueezeThreshold
-    {
-        get => _maxSqueezeThreshold;
-        set => _maxSqueezeThreshold = Math.Clamp(value, 0, 1);
-    }
-
-
-    // used for VRCFT v2 params
-    private float _maxOpennessThreshold;
-
-    [JsonInclude]
-    public float MaxOpennessThreshold
-    {
-        get => _maxOpennessThreshold;
-        set => _maxOpennessThreshold = Math.Clamp(value, 0, 2f);
-    }
-
-    private float _maxSquintThreshold;
-
-    [JsonInclude]
-    public float MaxSquintThreshold
-    {
-        get => _maxSquintThreshold;
-        set => _maxSquintThreshold = Math.Clamp(value, -2f, 0);
-    }
 
     public static Config Default
     {
@@ -62,14 +51,11 @@ public struct Config
             ShouldEmulateEyeWiden = true,
             ShouldEmulateEyeSquint = true,
             ShouldEmulateEyebrows = true,
-            SqueezeThreshold = 0.05f,
-            WidenThreshold = 0.95f,
+            WidenSqueezeThreshold = new[] { 0.05f, 0.95f },
             EyebrowThresholdRising = 0.9f,
             EyebrowThresholdLowering = 0.05f,
-            MaxWidenThreshold = 1,
-            MaxSqueezeThreshold = 0,
-            MaxOpennessThreshold = 1.4f,
-            MaxSquintThreshold = -1.4f,
+            MaxWidenSqueezeThresholdV1 = new[] { 0f, 1f },
+            MaxWidenSqueezeThresholdV2 = new[] { -1.4f, 1.4f },
         };
     }
 }
@@ -99,7 +85,7 @@ public class ETVRConfigManager
             SaveConfig();
             return;
         }
-        
+
         _logger.LogInformation($"Loading config from {_configFilePath}");
         var jsonData = File.ReadAllText(_configFilePath);
         try

@@ -55,12 +55,12 @@ public class V1Mapper : BaseParamMapper
         var baseLeftEyeOpenness = _parameterValues["LeftEyeLidExpandedSqueeze"];
 
         _handleSingleEyeOpenness(ref eyeData.Right, ref eyeShapes, UnifiedExpressions.EyeWideRight,
-            UnifiedExpressions.EyeSquintRight, baseRightEyeOpenness, _config.WidenThreshold, _config.SqueezeThreshold,
-            _config.MaxWidenThreshold, _config.MaxSqueezeThreshold);
+            UnifiedExpressions.EyeSquintRight, baseRightEyeOpenness, _config.WidenSqueezeThreshold,
+            _config.MaxWidenSqueezeThresholdV1);
 
         _handleSingleEyeOpenness(ref eyeData.Left, ref eyeShapes, UnifiedExpressions.EyeWideLeft,
-            UnifiedExpressions.EyeSquintLeft, baseLeftEyeOpenness, _config.WidenThreshold, _config.SqueezeThreshold,
-            _config.MaxWidenThreshold, _config.MaxSqueezeThreshold);
+            UnifiedExpressions.EyeSquintLeft, baseLeftEyeOpenness, _config.WidenSqueezeThreshold,
+            _config.MaxWidenSqueezeThresholdV1);
     }
 
     private void _handleSingleEyeOpenness(
@@ -69,29 +69,27 @@ public class V1Mapper : BaseParamMapper
         UnifiedExpressions widenParam,
         UnifiedExpressions squintParam,
         float baseEyeOpenness,
-        float widenThreshold,
-        float squeezeThreshold,
-        float maxWidenThreshold,
-        float maxSqueezeThreshold
+        IReadOnlyList<float> widenSqueezeThreshold,
+        IReadOnlyList<float> maxWidenSqueezeThreshold
     )
     {
         eye.Openness = baseEyeOpenness;
-        if (_config.ShouldEmulateEyeWiden && baseEyeOpenness >= widenThreshold)
+        if (_config.ShouldEmulateEyeWiden && baseEyeOpenness >= widenSqueezeThreshold[1])
         {
             eyeShapes[(int)widenParam].Weight = Utils.SmoothStep(
-                widenThreshold,
-                maxWidenThreshold,
+                widenSqueezeThreshold[1],
+                maxWidenSqueezeThreshold[1],
                 baseEyeOpenness
             );
             eyeShapes[(int)squintParam].Weight = 0;
         }
 
-        if (_config.ShouldEmulateEyeSquint && baseEyeOpenness <= squeezeThreshold)
+        if (_config.ShouldEmulateEyeSquint && baseEyeOpenness <= widenSqueezeThreshold[0])
         {
             eyeShapes[(int)widenParam].Weight = 0;
             eyeShapes[(int)squintParam].Weight = Utils.SmoothStep(
-                squeezeThreshold,
-                maxSqueezeThreshold,
+                widenSqueezeThreshold[0],
+                maxWidenSqueezeThreshold[0],
                 baseEyeOpenness
             );
         }

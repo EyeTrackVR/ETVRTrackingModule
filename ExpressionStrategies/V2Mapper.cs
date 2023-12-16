@@ -73,43 +73,41 @@ public class V2Mapper : BaseParamMapper
         {
             var eyeOpenness = _parameterValues["EyeLid"];
 
-            HandleSingleEyeOpenness(ref eyeData.Left, eyeOpenness, _config.WidenThreshold, _config.SqueezeThreshold,
-                _config.MaxOpennessThreshold, _config.MaxSquintThreshold);
-            HandleSingleEyeOpenness(ref eyeData.Right, eyeOpenness, _config.WidenThreshold, _config.SqueezeThreshold,
-                _config.MaxOpennessThreshold, _config.MaxSquintThreshold);
+            HandleSingleEyeOpenness(ref eyeData.Left, eyeOpenness, _config.WidenSqueezeThreshold,
+                _config.MaxWidenSqueezeThresholdV2);
+            HandleSingleEyeOpenness(ref eyeData.Right, eyeOpenness, _config.WidenSqueezeThreshold,
+                _config.MaxWidenSqueezeThresholdV2);
             return;
         }
 
-        HandleSingleEyeOpenness(ref eyeData.Left, _parameterValues["EyeLidLeft"], _config.WidenThreshold,
-            _config.SqueezeThreshold, _config.MaxOpennessThreshold, _config.MaxSquintThreshold);
-        HandleSingleEyeOpenness(ref eyeData.Right, _parameterValues["EyeLidRight"], _config.WidenThreshold,
-            _config.SqueezeThreshold, _config.MaxOpennessThreshold, _config.MaxSquintThreshold);
+        HandleSingleEyeOpenness(ref eyeData.Left, _parameterValues["EyeLidLeft"], _config.WidenSqueezeThreshold,
+            _config.MaxWidenSqueezeThresholdV2);
+        HandleSingleEyeOpenness(ref eyeData.Right, _parameterValues["EyeLidRight"], _config.WidenSqueezeThreshold,
+            _config.MaxWidenSqueezeThresholdV2);
     }
 
     private void HandleSingleEyeOpenness(
         ref UnifiedSingleEyeData eyeData,
         float baseOpenness,
-        float widenThreshold,
-        float squeezeThreshold,
-        float maxOpennessThreshold,
-        float maxSquintThreshold
+        IReadOnlyList<float> widenSqueezeThreshold,
+        IReadOnlyList<float> maxWidenSqueezeThresholdV2
     )
     {
         eyeData.Openness = baseOpenness;
-        if (_config.ShouldEmulateEyeWiden && baseOpenness >= widenThreshold)
+        if (_config.ShouldEmulateEyeWiden && baseOpenness >= widenSqueezeThreshold[1])
         {
             eyeData.Openness = Utils.SmoothStep(
-                widenThreshold,
-                maxOpennessThreshold,
+                widenSqueezeThreshold[1],
+                maxWidenSqueezeThresholdV2[1],
                 baseOpenness
             );
         }
 
-        if (_config.ShouldEmulateEyeSquint && baseOpenness <= squeezeThreshold)
+        if (_config.ShouldEmulateEyeSquint && baseOpenness <= widenSqueezeThreshold[0])
         {
             eyeData.Openness = Utils.SmoothStep(
-                squeezeThreshold,
-                maxSquintThreshold,
+                widenSqueezeThreshold[0],
+                maxWidenSqueezeThresholdV2[0],
                 baseOpenness
             );
         }
