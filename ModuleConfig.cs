@@ -20,24 +20,38 @@ public struct Config
         get => _widenSqueezeThreshold;
         set { _widenSqueezeThreshold = new[] { Math.Clamp(value[0], 0f, 1f), Math.Clamp(value[1], 0f, 1f) }; }
     }
-
+    
+    // describes the [maximum LOWEST point, maximum HIGHEST point]. ex, 0.95 - 0.98.
+    // Means, it will activate with openness greater or equal to 0.95 and will stop at 0.98.
+    // activation points are described by WidenSqueezeThreshold
     [JsonIgnore] private float[] _maxWidenSqueezeThresholdV1;
 
     [JsonInclude]
     public float[] MaxWidenSqueezeThresholdV1
     {
         get => _maxWidenSqueezeThresholdV1;
-        set { _maxWidenSqueezeThresholdV1 = new[] { Math.Clamp(value[0], 0f, 1f), Math.Clamp(value[1], 0f, 1f) }; }
+        set { _maxWidenSqueezeThresholdV1 = new[] { Math.Clamp(value[0], 0f, 2f), Math.Clamp(value[1], 0f, 2f) }; }
     }
 
-
+    // describes the [activation point, maximum point]. ex, 0.95 - 0.98.
+    // Means, it will activate with openness greater or equal and will stop at 0.98.
     [JsonIgnore] private float[] _maxWidenSqueezeThresholdV2;
 
     [JsonInclude]
     public float[] MaxWidenSqueezeThresholdV2
     {
         get => _maxWidenSqueezeThresholdV2;
-        set { _maxWidenSqueezeThresholdV2 = new[] { Math.Clamp(value[0], -1.4f, 0), Math.Clamp(value[1], 0, 1.4f) }; }
+        set { _maxWidenSqueezeThresholdV2 = new[] { Math.Clamp(value[0], -2f, 0), Math.Clamp(value[1], 0, 2f) }; }
+    }
+    
+    // describes by how much the output should be multiplied. 1 by default, 0-2 range. 
+    [JsonIgnore] private float _outputMultiplier;
+
+    [JsonInclude]
+    public float OutputMultiplier
+    {
+        get => _outputMultiplier;
+        set => _outputMultiplier = Math.Clamp(value, 0f, 2f);
     }
 
     [JsonInclude] public float EyebrowThresholdRising;
@@ -54,8 +68,9 @@ public struct Config
             WidenSqueezeThreshold = new[] { 0.05f, 0.95f },
             EyebrowThresholdRising = 0.9f,
             EyebrowThresholdLowering = 0.05f,
-            MaxWidenSqueezeThresholdV1 = new[] { 0f, 1f },
-            MaxWidenSqueezeThresholdV2 = new[] { -1.4f, 1.4f },
+            OutputMultiplier = 1f,
+            MaxWidenSqueezeThresholdV1 = new[] { 0f, 2f },
+            MaxWidenSqueezeThresholdV2 = new[] { -2f, 2f },
         };
     }
 }
