@@ -29,7 +29,9 @@ public class V2Mapper : BaseParamMapper
         { "EyeLidRight", 1f },
     };
 
-    public V2Mapper(ILogger logger, ref Config config) : base(logger, ref config) { }
+    public V2Mapper(ILogger logger, ref Config config) : base(logger, ref config)
+    {
+    }
 
     public override void handleOSCMessage(OSCMessage message)
     {
@@ -42,7 +44,8 @@ public class V2Mapper : BaseParamMapper
         UpdateVRCFTEyeData(ref UnifiedTracking.Data.Eye, ref UnifiedTracking.Data.Shapes, singleEyeMode);
     }
 
-    private void UpdateVRCFTEyeData(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes, bool isSingleEyeMode = false)
+    private void UpdateVRCFTEyeData(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes,
+        bool isSingleEyeMode = false)
     {
         HandleEyeGaze(ref eyeData, isSingleEyeMode);
         HandleEyeOpenness(ref eyeData, ref eyeShapes, isSingleEyeMode);
@@ -70,41 +73,40 @@ public class V2Mapper : BaseParamMapper
         {
             var eyeOpenness = _parameterValues["EyeLid"];
 
-            HandleSingleEyeOpenness(ref eyeData.Left, eyeOpenness, _config.WidenThreshold, _config.SqueezeThreshold);
-            HandleSingleEyeOpenness(ref eyeData.Right, eyeOpenness, _config.WidenThreshold, _config.SqueezeThreshold);
+            HandleSingleEyeOpenness(ref eyeData.Left, eyeOpenness, _config);
+            HandleSingleEyeOpenness(ref eyeData.Right, eyeOpenness, _config);
             return;
         }
 
-        HandleSingleEyeOpenness(ref eyeData.Left, _parameterValues["EyeLidLeft"], _config.WidenThreshold,
-            _config.SqueezeThreshold);
-        HandleSingleEyeOpenness(ref eyeData.Right, _parameterValues["EyeLidRight"], _config.WidenThreshold,
-            _config.SqueezeThreshold);
+        HandleSingleEyeOpenness(ref eyeData.Left, _parameterValues["EyeLidLeft"], _config);
+        HandleSingleEyeOpenness(ref eyeData.Right, _parameterValues["EyeLidRight"], _config);
     }
 
     private void HandleSingleEyeOpenness(
         ref UnifiedSingleEyeData eyeData,
         float baseOpenness,
-        float widenThreshold,
-        float squeezeThreshold
+        Config config
     )
     {
         eyeData.Openness = baseOpenness;
-        if (_config.ShouldEmulateEyeWiden && baseOpenness >= widenThreshold)
+        if (_config.ShouldEmulateEyeWiden && baseOpenness >= config.WidenSqueezeThreshold[1])
         {
-            eyeData.Openness = Utils.SmoothStep(
-                widenThreshold,
-                1.4f,
+            var opennessValue = Utils.SmoothStep(
+                config.WidenSqueezeThreshold[1],
+                config.MaxWidenSqueezeThresholdV2[1],
                 baseOpenness
-            );
+            ) * config.OutputMultiplier;
+            eyeData.Openness = opennessValue;
         }
 
-        if (_config.ShouldEmulateEyeSquint && baseOpenness <= squeezeThreshold)
+        if (_config.ShouldEmulateEyeSquint && baseOpenness <= config.WidenSqueezeThreshold[0])
         {
-            eyeData.Openness = Utils.SmoothStep(
-                squeezeThreshold,
-                -1.4f,
+            var opennessValue = Utils.SmoothStep(
+                config.WidenSqueezeThreshold[0],
+                config.MaxWidenSqueezeThresholdV2[0],
                 baseOpenness
-            );
+            ) * config.OutputMultiplier;
+            eyeData.Openness = opennessValue;
         }
     }
 
