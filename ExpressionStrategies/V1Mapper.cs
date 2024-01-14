@@ -51,8 +51,13 @@ public class V1Mapper : BaseParamMapper
         // or making a surprised face. Therefore, we kinda have to cheat. 
         // If we detect that the values provided by ETVR are below or above a certain threshold 
         // we fake the squeeze and widen
-        var baseRightEyeOpenness = _parameterValues["RightEyeLidExpandedSqueeze"];
-        var baseLeftEyeOpenness = _parameterValues["LeftEyeLidExpandedSqueeze"];
+
+        var baseRightEyeOpenness = (float)_leftOneEuroFilter.Filter(_parameterValues["RightEyeLidExpandedSqueeze"], 1);
+        var baseLeftEyeOpenness = (float)_rightOneEuroFilter.Filter(_parameterValues["LeftEyeLidExpandedSqueeze"], 1);
+
+        _logger.LogInformation("left: {} base: {}, right: {} base: {}", baseLeftEyeOpenness,
+            _parameterValues["LeftEyeLidExpandedSqueeze"], baseRightEyeOpenness,
+            _parameterValues["RightEyeLidExpandedSqueeze"]);
 
         _handleSingleEyeOpenness(ref eyeData.Right, ref eyeShapes, UnifiedExpressions.EyeWideRight,
             UnifiedExpressions.EyeSquintRight, baseRightEyeOpenness, _config);
@@ -96,13 +101,14 @@ public class V1Mapper : BaseParamMapper
 
     private void EmulateEyeBrows(ref UnifiedExpressionShape[] eyeShapes)
     {
-        var baseRightEyeOpenness = _parameterValues["RightEyeLidExpandedSqueeze"];
-        var baseLeftEyeOpenness = _parameterValues["LeftEyeLidExpandedSqueeze"];
+        var baseRightEyeOpenness = (float)_leftOneEuroFilter.Filter(_parameterValues["RightEyeLidExpandedSqueeze"], 1);
+        var baseLeftEyeOpenness = (float)_rightOneEuroFilter.Filter(_parameterValues["LeftEyeLidExpandedSqueeze"], 1);
 
         _emulateEyeBrow(
             ref eyeShapes,
             UnifiedExpressions.BrowLowererRight,
             UnifiedExpressions.BrowOuterUpRight,
+            ref _leftOneEuroFilter,
             baseRightEyeOpenness,
             _config.EyebrowThresholdRising,
             _config.EyebrowThresholdLowering
@@ -112,6 +118,7 @@ public class V1Mapper : BaseParamMapper
             ref eyeShapes,
             UnifiedExpressions.BrowLowererLeft,
             UnifiedExpressions.BrowOuterUpLeft,
+            ref _rightOneEuroFilter,
             baseLeftEyeOpenness,
             _config.EyebrowThresholdRising,
             _config.EyebrowThresholdLowering

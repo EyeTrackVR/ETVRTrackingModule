@@ -71,15 +71,21 @@ public class V2Mapper : BaseParamMapper
     {
         if (isSingleEyeMode)
         {
-            var eyeOpenness = _parameterValues["EyeLid"];
+            var eyeOpenness = (float)_leftOneEuroFilter.Filter(_parameterValues["EyeLid"], 1);
 
             HandleSingleEyeOpenness(ref eyeData.Left, eyeOpenness, _config);
             HandleSingleEyeOpenness(ref eyeData.Right, eyeOpenness, _config);
             return;
         }
 
-        HandleSingleEyeOpenness(ref eyeData.Left, _parameterValues["EyeLidLeft"], _config);
-        HandleSingleEyeOpenness(ref eyeData.Right, _parameterValues["EyeLidRight"], _config);
+        HandleSingleEyeOpenness(
+            ref eyeData.Left,
+            (float)_leftOneEuroFilter.Filter(_parameterValues["EyeLidLeft"], 1),
+            _config);
+        HandleSingleEyeOpenness(
+            ref eyeData.Right,
+            (float)_rightOneEuroFilter.Filter(_parameterValues["EyeLidRight"], 1),
+            _config);
     }
 
     private void HandleSingleEyeOpenness(
@@ -120,6 +126,7 @@ public class V2Mapper : BaseParamMapper
                 ref eyeShapes,
                 UnifiedExpressions.BrowLowererRight,
                 UnifiedExpressions.BrowOuterUpRight,
+                ref _leftOneEuroFilter,
                 eyeOpenness,
                 _config.EyebrowThresholdRising,
                 _config.EyebrowThresholdLowering
@@ -129,6 +136,7 @@ public class V2Mapper : BaseParamMapper
                 ref eyeShapes,
                 UnifiedExpressions.BrowLowererLeft,
                 UnifiedExpressions.BrowOuterUpLeft,
+                ref _rightOneEuroFilter,
                 eyeOpenness,
                 _config.EyebrowThresholdRising,
                 _config.EyebrowThresholdLowering
@@ -144,6 +152,7 @@ public class V2Mapper : BaseParamMapper
             ref eyeShapes,
             UnifiedExpressions.BrowLowererRight,
             UnifiedExpressions.BrowOuterUpRight,
+            ref _leftOneEuroFilter,
             baseRightEyeOpenness,
             _config.EyebrowThresholdRising,
             _config.EyebrowThresholdLowering
@@ -153,6 +162,7 @@ public class V2Mapper : BaseParamMapper
             ref eyeShapes,
             UnifiedExpressions.BrowLowererLeft,
             UnifiedExpressions.BrowOuterUpLeft,
+            ref _rightOneEuroFilter,
             baseLeftEyeOpenness,
             _config.EyebrowThresholdRising,
             _config.EyebrowThresholdLowering
