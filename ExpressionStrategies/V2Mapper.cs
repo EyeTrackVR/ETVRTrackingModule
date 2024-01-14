@@ -95,21 +95,21 @@ public class V2Mapper : BaseParamMapper
     )
     {
         eyeData.Openness = baseOpenness;
-        if (_config.ShouldEmulateEyeWiden && baseOpenness >= config.WidenSqueezeThreshold[1])
+        if (_config.ShouldEmulateEyeWiden && baseOpenness >= config.WidenThresholdV2[0])
         {
             var opennessValue = Utils.SmoothStep(
-                config.WidenSqueezeThreshold[1],
-                config.MaxWidenSqueezeThresholdV2[1],
+                config.WidenThresholdV2[0],
+                config.WidenThresholdV2[1],
                 baseOpenness
             ) * config.OutputMultiplier;
             eyeData.Openness = opennessValue;
         }
 
-        if (_config.ShouldEmulateEyeSquint && baseOpenness <= config.WidenSqueezeThreshold[0])
+        if (_config.ShouldEmulateEyeSquint && baseOpenness <= config.SqueezeThresholdV2[0])
         {
             var opennessValue = Utils.SmoothStep(
-                config.WidenSqueezeThreshold[0],
-                config.MaxWidenSqueezeThresholdV2[0],
+                config.SqueezeThresholdV2[0],
+                config.SqueezeThresholdV2[1],
                 baseOpenness
             ) * config.OutputMultiplier;
             eyeData.Openness = opennessValue;

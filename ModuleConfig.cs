@@ -12,36 +12,53 @@ public struct Config
     [JsonInclude] public bool ShouldEmulateEyeSquint;
     [JsonInclude] public bool ShouldEmulateEyebrows;
 
-    [JsonIgnore] private float[] _widenSqueezeThreshold;
+    [JsonIgnore] private float[] _squeezeThresholdV1;
+    [JsonIgnore] private float[] _widenThresholdV1;
 
+    [JsonIgnore] private float[] _squeezeThresholdV2;
+    [JsonIgnore] private float[] _widenThresholdV2;
+
+
+    // describes the minimum and maximum activation thresholds for squeeze for V1 parameters
+    // meaning, it will start detecting from value constrained in 0 - 1 space, and stop at 0 - 2.
     [JsonInclude]
-    public float[] WidenSqueezeThreshold
+    public float[] SqueezeThresholdV1
     {
-        get => _widenSqueezeThreshold;
-        set { _widenSqueezeThreshold = new[] { Math.Clamp(value[0], 0f, 1f), Math.Clamp(value[1], 0f, 1f) }; }
+        get => _squeezeThresholdV1;
+        set
+        {
+            _squeezeThresholdV1 = new[] { Math.Clamp(value[0], 0f, 1f), Math.Clamp(value[1], 0f, 2f) };
+        }
     }
     
-    // describes the [maximum LOWEST point, maximum HIGHEST point]. ex, 0.95 - 0.98.
-    // Means, it will activate with openness greater or equal to 0.95 and will stop at 0.98.
-    // activation points are described by WidenSqueezeThreshold
-    [JsonIgnore] private float[] _maxWidenSqueezeThresholdV1;
-
     [JsonInclude]
-    public float[] MaxWidenSqueezeThresholdV1
+    public float[] WidenThresholdV1
     {
-        get => _maxWidenSqueezeThresholdV1;
-        set { _maxWidenSqueezeThresholdV1 = new[] { Math.Clamp(value[0], 0f, 2f), Math.Clamp(value[1], 0f, 2f) }; }
+        get => _widenThresholdV1;
+        set
+        {
+            _widenThresholdV1 = new[] { Math.Clamp(value[0], 0f, 1f), Math.Clamp(value[1], 0f, 2f) };
+        }
     }
-
-    // describes the [activation point, maximum point]. ex, 0.95 - 0.98.
-    // Means, it will activate with openness greater or equal and will stop at 0.98.
-    [JsonIgnore] private float[] _maxWidenSqueezeThresholdV2;
-
+    
     [JsonInclude]
-    public float[] MaxWidenSqueezeThresholdV2
+    public float[] SqueezeThresholdV2
     {
-        get => _maxWidenSqueezeThresholdV2;
-        set { _maxWidenSqueezeThresholdV2 = new[] { Math.Clamp(value[0], -2f, 0), Math.Clamp(value[1], 0, 2f) }; }
+        get => _squeezeThresholdV2;
+        set
+        {
+            _squeezeThresholdV2 = new[] { Math.Clamp(value[0], 0f, 1f), Math.Clamp(value[1], -2f, 0f) };
+        }
+    }
+    
+    [JsonInclude]
+    public float[] WidenThresholdV2
+    {
+        get => _widenThresholdV2;
+        set
+        {
+            _widenThresholdV2 = new[] { Math.Clamp(value[0], 0f, 1f), Math.Clamp(value[1], 0f, 2f) };
+        }
     }
     
     // describes by how much the output should be multiplied. 1 by default, 0-2 range. 
@@ -65,12 +82,13 @@ public struct Config
             ShouldEmulateEyeWiden = true,
             ShouldEmulateEyeSquint = true,
             ShouldEmulateEyebrows = true,
-            WidenSqueezeThreshold = new[] { 0.05f, 0.95f },
+            WidenThresholdV1 = new []{ 0.95f, 2f },
+            WidenThresholdV2 = new []{ 0.95f, 2f },
+            SqueezeThresholdV1 = new []{ 0.05f, 2f },
+            SqueezeThresholdV2 = new []{ 0.05f, -2f },
             EyebrowThresholdRising = 0.9f,
             EyebrowThresholdLowering = 0.05f,
             OutputMultiplier = 1f,
-            MaxWidenSqueezeThresholdV1 = new[] { 0f, 2f },
-            MaxWidenSqueezeThresholdV2 = new[] { -2f, 2f },
         };
     }
 }

@@ -76,23 +76,23 @@ public class V1Mapper : BaseParamMapper
     )
     {
         eye.Openness = baseEyeOpenness;
-        if (_config.ShouldEmulateEyeWiden && baseEyeOpenness >= config.WidenSqueezeThreshold[1])
+        if (_config.ShouldEmulateEyeWiden && baseEyeOpenness >= config.WidenThresholdV1[0])
         {
             var widenValue = Utils.SmoothStep(
-                config.WidenSqueezeThreshold[1],
-                config.MaxWidenSqueezeThresholdV1[1],
+                config.WidenThresholdV1[0],
+                config.WidenThresholdV1[1],
                 baseEyeOpenness
             ) * config.OutputMultiplier;
             eyeShapes[(int)widenParam].Weight = widenValue;
             eyeShapes[(int)squintParam].Weight = 0;
         }
 
-        if (_config.ShouldEmulateEyeSquint && baseEyeOpenness <= config.WidenSqueezeThreshold[0])
+        if (_config.ShouldEmulateEyeSquint && baseEyeOpenness <= config.SqueezeThresholdV1[0])
         {
             eyeShapes[(int)widenParam].Weight = 0;
             var squintValue = Utils.SmoothStep(
-                config.WidenSqueezeThreshold[0],
-                config.MaxWidenSqueezeThresholdV1[0],
+                config.SqueezeThresholdV1[0],
+                config.SqueezeThresholdV1[1],
                 baseEyeOpenness
             ) * config.OutputMultiplier;
             eyeShapes[(int)squintParam].Weight = squintValue;
