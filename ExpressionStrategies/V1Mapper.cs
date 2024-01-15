@@ -55,10 +55,6 @@ public class V1Mapper : BaseParamMapper
         var baseRightEyeOpenness = (float)_leftOneEuroFilter.Filter(_parameterValues["RightEyeLidExpandedSqueeze"], 1);
         var baseLeftEyeOpenness = (float)_rightOneEuroFilter.Filter(_parameterValues["LeftEyeLidExpandedSqueeze"], 1);
 
-        _logger.LogInformation("left: {} base: {}, right: {} base: {}", baseLeftEyeOpenness,
-            _parameterValues["LeftEyeLidExpandedSqueeze"], baseRightEyeOpenness,
-            _parameterValues["RightEyeLidExpandedSqueeze"]);
-
         _handleSingleEyeOpenness(ref eyeData.Right, ref eyeShapes, UnifiedExpressions.EyeWideRight,
             UnifiedExpressions.EyeSquintRight, baseRightEyeOpenness, _config);
 
@@ -78,6 +74,7 @@ public class V1Mapper : BaseParamMapper
         eye.Openness = baseEyeOpenness;
         if (_config.ShouldEmulateEyeWiden && baseEyeOpenness >= config.WidenThresholdV1[0])
         {
+            eye.Openness = 0.8f;
             var widenValue = Utils.SmoothStep(
                 config.WidenThresholdV1[0],
                 config.WidenThresholdV1[1],
@@ -91,8 +88,8 @@ public class V1Mapper : BaseParamMapper
         {
             eyeShapes[(int)widenParam].Weight = 0;
             var squintValue = Utils.SmoothStep(
-                config.SqueezeThresholdV1[0],
                 config.SqueezeThresholdV1[1],
+                config.SqueezeThresholdV1[0],
                 baseEyeOpenness
             ) * config.OutputMultiplier;
             eyeShapes[(int)squintParam].Weight = squintValue;

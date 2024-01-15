@@ -102,7 +102,7 @@ public class V2Mapper : BaseParamMapper
                 config.WidenThresholdV2[1],
                 baseOpenness
             ) * config.OutputMultiplier;
-            eyeData.Openness = opennessValue;
+            eyeData.Openness = baseOpenness + opennessValue;
         }
 
         if (_config.ShouldEmulateEyeSquint && baseOpenness <= config.SqueezeThresholdV2[0])
@@ -112,7 +112,7 @@ public class V2Mapper : BaseParamMapper
                 config.SqueezeThresholdV2[1],
                 baseOpenness
             ) * config.OutputMultiplier;
-            eyeData.Openness = opennessValue;
+            eyeData.Openness = baseOpenness - opennessValue;
         }
     }
 

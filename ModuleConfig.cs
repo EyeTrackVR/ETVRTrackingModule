@@ -19,8 +19,11 @@ public struct Config
     [JsonIgnore] private float[] _widenThresholdV2;
 
 
-    // describes the minimum and maximum activation thresholds for squeeze for V1 parameters
-    // meaning, it will start detecting from value constrained in 0 - 1 space, and stop at 0 - 2.
+     // describes the minimum and maximum activation thresholds for squeeze emulation for V1 parameters
+     // meaning, it will start detecting from value constrained in 0 - 1 space, and do a smooth step
+     // with the lower value acting as the lower edge and vice versa.
+     // The higher the first value, the later it will activate,
+     // and the higher the second value, the less pronounced the effect will be 
     [JsonInclude]
     public float[] SqueezeThresholdV1
     {
@@ -31,6 +34,11 @@ public struct Config
         }
     }
     
+     // describes the minimum and maximum activation thresholds for widen emulation for V1 parameters
+     // meaning, it will start detecting from value constrained in 0 - 1 space, and do a smooth step
+     // with the lower value acting as the lower edge and vice versa.
+     // The higher the first value, the later it will activate,
+     // and the higher the second value, the less pronounced the effect will be
     [JsonInclude]
     public float[] WidenThresholdV1
     {
@@ -82,10 +90,10 @@ public struct Config
             ShouldEmulateEyeWiden = true,
             ShouldEmulateEyeSquint = true,
             ShouldEmulateEyebrows = true,
-            WidenThresholdV1 = new []{ 0.95f, 2f },
-            WidenThresholdV2 = new []{ 0.95f, 2f },
-            SqueezeThresholdV1 = new []{ 0.05f, 2f },
-            SqueezeThresholdV2 = new []{ 0.05f, -2f },
+            WidenThresholdV1 = new []{ 0.95f, 1f },
+            WidenThresholdV2 = new []{ 0.95f, 1.05f },
+            SqueezeThresholdV1 = new []{ 0.05f, 0.5f },
+            SqueezeThresholdV2 = new []{ 0.05f, -1f },
             EyebrowThresholdRising = 0.9f,
             EyebrowThresholdLowering = 0.05f,
             OutputMultiplier = 1f,
