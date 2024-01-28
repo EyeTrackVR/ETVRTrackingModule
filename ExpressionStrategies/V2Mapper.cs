@@ -29,6 +29,23 @@ public class V2Mapper : BaseParamMapper
         { "EyeLidRight", 1f },
     };
 
+    private readonly string[] _gazeParameters =
+    {
+        "EyeX",
+        "EyeY",
+        "EyeLeftX",
+        "EyeLeftY",
+        "EyeRightX",
+        "EyeRightY",
+    };
+
+    private readonly string[] _opennessParameters =
+    {
+        "EyeLid",
+        "EyeLidLeft",
+        "EyeLidRight",
+    };
+
     public V2Mapper(ILogger logger, ref Config config) : base(logger, ref config)
     {
     }
@@ -41,15 +58,20 @@ public class V2Mapper : BaseParamMapper
 
         _parameterValues[paramToMap] = message.value;
         var singleEyeMode = _singleEyeParamNames.Contains(paramToMap);
-        UpdateVRCFTEyeData(ref UnifiedTracking.Data.Eye, ref UnifiedTracking.Data.Shapes, singleEyeMode);
+        UpdateVRCFTEyeData(ref UnifiedTracking.Data.Eye, ref UnifiedTracking.Data.Shapes, paramToMap, singleEyeMode);
     }
 
     private void UpdateVRCFTEyeData(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes,
-        bool isSingleEyeMode = false)
+        string parameter, bool isSingleEyeMode = false)
     {
-        HandleEyeGaze(ref eyeData, isSingleEyeMode);
-        HandleEyeOpenness(ref eyeData, ref eyeShapes, isSingleEyeMode);
-        EmulateEyebrows(ref eyeShapes, isSingleEyeMode);
+        if (_gazeParameters.Contains(parameter))
+            HandleEyeGaze(ref eyeData, isSingleEyeMode);
+
+        if (_opennessParameters.Contains(parameter))
+        {
+            HandleEyeOpenness(ref eyeData, ref eyeShapes, isSingleEyeMode);
+            EmulateEyebrows(ref eyeShapes, isSingleEyeMode);
+        }
     }
 
     private void HandleEyeGaze(ref UnifiedEyeData eyeData, bool isSingleEyeMode)
