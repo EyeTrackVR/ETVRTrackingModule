@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
-namespace  ETVRTrackingModule;
+namespace ETVRTrackingModule;
 
 public struct Config
 {
@@ -11,38 +11,103 @@ public struct Config
     [JsonInclude] public bool ShouldEmulateEyeWiden;
     [JsonInclude] public bool ShouldEmulateEyeSquint;
     [JsonInclude] public bool ShouldEmulateEyebrows;
-    [JsonInclude] public float SqueezeThreshold;
-    [JsonInclude] public float WidenThreshold;
+
+    [JsonIgnore] private float[] _squeezeThresholdV1;
+    [JsonIgnore] private float[] _widenThresholdV1;
+
+    [JsonIgnore] private float[] _squeezeThresholdV2;
+    [JsonIgnore] private float[] _widenThresholdV2;
+
+
+     // describes the minimum and maximum activation thresholds for squeeze emulation for V1 parameters
+     // meaning, it will start detecting from value constrained in 0 - 1 space, and do a smooth step
+     // with the lower value acting as the lower edge and vice versa.
+     // The higher the first value, the later it will activate,
+     // and the higher the second value, the less pronounced the effect will be 
+    [JsonInclude]
+    public float[] SqueezeThresholdV1
+    {
+        get => _squeezeThresholdV1;
+        set
+        {
+            _squeezeThresholdV1 = new[] { Math.Clamp(value[0], 0f, 1f), Math.Clamp(value[1], 0f, 2f) };
+        }
+    }
+    
+     // describes the minimum and maximum activation thresholds for widen emulation for V1 parameters
+     // meaning, it will start detecting from value constrained in 0 - 1 space, and do a smooth step
+     // with the lower value acting as the lower edge and vice versa.
+     // The higher the first value, the later it will activate,
+     // and the higher the second value, the less pronounced the effect will be
+    [JsonInclude]
+    public float[] WidenThresholdV1
+    {
+        get => _widenThresholdV1;
+        set
+        {
+            _widenThresholdV1 = new[] { Math.Clamp(value[0], 0f, 1f), Math.Clamp(value[1], 0f, 2f) };
+        }
+    }
+    
+    [JsonInclude]
+    public float[] SqueezeThresholdV2
+    {
+        get => _squeezeThresholdV2;
+        set
+        {
+            _squeezeThresholdV2 = new[] { Math.Clamp(value[0], 0f, 1f), Math.Clamp(value[1], -2f, 0f) };
+        }
+    }
+    
+    [JsonInclude]
+    public float[] WidenThresholdV2
+    {
+        get => _widenThresholdV2;
+        set
+        {
+            _widenThresholdV2 = new[] { Math.Clamp(value[0], 0f, 1f), Math.Clamp(value[1], 0f, 2f) };
+        }
+    }
+    
+    // describes by how much the output should be multiplied. 1 by default, 0-2 range. 
+    [JsonIgnore] private float _outputMultiplier;
+
+    [JsonInclude]
+    public float OutputMultiplier
+    {
+        get => _outputMultiplier;
+        set => _outputMultiplier = Math.Clamp(value, 0f, 2f);
+    }
+
     [JsonInclude] public float EyebrowThresholdRising;
     [JsonInclude] public float EyebrowThresholdLowering;
-    
+
     public static Config Default
     {
-        get => new () 
+        get => new()
         {
             PortNumber = 8889,
-            ShouldEmulateEyeWiden = true, 
+            ShouldEmulateEyeWiden = true,
             ShouldEmulateEyeSquint = true,
             ShouldEmulateEyebrows = true,
-            SqueezeThreshold = 0.05f,
-            WidenThreshold = 0.95f,
+            WidenThresholdV1 = new []{ 0.95f, 1f },
+            WidenThresholdV2 = new []{ 0.95f, 1.05f },
+            SqueezeThresholdV1 = new []{ 0.05f, 0.5f },
+            SqueezeThresholdV2 = new []{ 0.05f, -1f },
             EyebrowThresholdRising = 0.9f,
             EyebrowThresholdLowering = 0.05f,
+            OutputMultiplier = 1f,
         };
     }
 }
-
 
 public class ETVRConfigManager
 {
     private readonly string _configurationFileName = "ETVRModuleConfig.json";
     private readonly string _configFilePath;
     private Config _config = Config.Default;
-    public Config Config
-    {
-        get => _config; 
-    }
-    
+    public Config Config => _config;
+
     private List<Action<Config>> _listeners;
     private ILogger _logger;
 
@@ -61,8 +126,7 @@ public class ETVRConfigManager
             SaveConfig();
             return;
         }
-        
-        
+
         _logger.LogInformation($"Loading config from {_configFilePath}");
         var jsonData = File.ReadAllText(_configFilePath);
         try
@@ -74,7 +138,7 @@ public class ETVRConfigManager
         {
             _logger.LogInformation("Something went wrong during config decoding. Overwriting it with defaults");
             SaveConfig();
-        }    
+        }
     }
 
     private void SaveConfig()
@@ -87,22 +151,22 @@ public class ETVRConfigManager
     public void UpdateConfig<T>(string fieldName, T value)
     {
         var field = _config.GetType().GetField(fieldName);
-        
+
         if (field is null) return;
 
         object boxedConfig = _config;
-        
+
         var type = Nullable.GetUnderlyingType(field.FieldType) ?? field.FieldType;
         var safeValue = Convert.ChangeType(value, type);
-        
+
         _logger.LogInformation($"[UPDATE] updating field {field} to {safeValue}");
         field.SetValue(boxedConfig, safeValue);
         _config = (Config)boxedConfig;
-        
+
         SaveConfig();
         NotifyListeners();
     }
-    
+
     private void NotifyListeners()
     {
         foreach (var listener in _listeners)

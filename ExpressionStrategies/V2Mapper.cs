@@ -29,7 +29,26 @@ public class V2Mapper : BaseParamMapper
         { "EyeLidRight", 1f },
     };
 
-    public V2Mapper(ILogger logger, ref Config config) : base(logger, ref config) { }
+    private readonly string[] _gazeParameters =
+    {
+        "EyeX",
+        "EyeY",
+        "EyeLeftX",
+        "EyeLeftY",
+        "EyeRightX",
+        "EyeRightY",
+    };
+
+    private readonly string[] _opennessParameters =
+    {
+        "EyeLid",
+        "EyeLidLeft",
+        "EyeLidRight",
+    };
+
+    public V2Mapper(ILogger logger, ref Config config) : base(logger, ref config)
+    {
+    }
 
     public override void handleOSCMessage(OSCMessage message)
     {
@@ -39,14 +58,20 @@ public class V2Mapper : BaseParamMapper
 
         _parameterValues[paramToMap] = message.value;
         var singleEyeMode = _singleEyeParamNames.Contains(paramToMap);
-        UpdateVRCFTEyeData(ref UnifiedTracking.Data.Eye, ref UnifiedTracking.Data.Shapes, singleEyeMode);
+        UpdateVRCFTEyeData(ref UnifiedTracking.Data.Eye, ref UnifiedTracking.Data.Shapes, paramToMap, singleEyeMode);
     }
 
-    private void UpdateVRCFTEyeData(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes, bool isSingleEyeMode = false)
+    private void UpdateVRCFTEyeData(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes,
+        string parameter, bool isSingleEyeMode = false)
     {
-        HandleEyeGaze(ref eyeData, isSingleEyeMode);
-        HandleEyeOpenness(ref eyeData, ref eyeShapes, isSingleEyeMode);
-        EmulateEyebrows(ref eyeShapes, isSingleEyeMode);
+        if (_gazeParameters.Contains(parameter))
+            HandleEyeGaze(ref eyeData, isSingleEyeMode);
+
+        if (_opennessParameters.Contains(parameter))
+        {
+            HandleEyeOpenness(ref eyeData, ref eyeShapes, isSingleEyeMode);
+            EmulateEyebrows(ref eyeShapes, isSingleEyeMode);
+        }
     }
 
     private void HandleEyeGaze(ref UnifiedEyeData eyeData, bool isSingleEyeMode)
@@ -68,43 +93,48 @@ public class V2Mapper : BaseParamMapper
     {
         if (isSingleEyeMode)
         {
-            var eyeOpenness = _parameterValues["EyeLid"];
+            var eyeOpenness = (float)_leftOneEuroFilter.Filter(_parameterValues["EyeLid"], 1);
 
-            HandleSingleEyeOpenness(ref eyeData.Left, eyeOpenness, _config.WidenThreshold, _config.SqueezeThreshold);
-            HandleSingleEyeOpenness(ref eyeData.Right, eyeOpenness, _config.WidenThreshold, _config.SqueezeThreshold);
+            HandleSingleEyeOpenness(ref eyeData.Left, eyeOpenness, _config);
+            HandleSingleEyeOpenness(ref eyeData.Right, eyeOpenness, _config);
             return;
         }
 
-        HandleSingleEyeOpenness(ref eyeData.Left, _parameterValues["EyeLidLeft"], _config.WidenThreshold,
-            _config.SqueezeThreshold);
-        HandleSingleEyeOpenness(ref eyeData.Right, _parameterValues["EyeLidRight"], _config.WidenThreshold,
-            _config.SqueezeThreshold);
+        HandleSingleEyeOpenness(
+            ref eyeData.Left,
+            (float)_leftOneEuroFilter.Filter(_parameterValues["EyeLidLeft"], 1),
+            _config);
+        HandleSingleEyeOpenness(
+            ref eyeData.Right,
+            (float)_rightOneEuroFilter.Filter(_parameterValues["EyeLidRight"], 1),
+            _config);
     }
 
     private void HandleSingleEyeOpenness(
         ref UnifiedSingleEyeData eyeData,
         float baseOpenness,
-        float widenThreshold,
-        float squeezeThreshold
+        Config config
     )
     {
         eyeData.Openness = baseOpenness;
-        if (_config.ShouldEmulateEyeWiden && baseOpenness >= widenThreshold)
+        if (_config.ShouldEmulateEyeWiden && baseOpenness >= config.WidenThresholdV2[0])
         {
-            eyeData.Openness = Utils.SmoothStep(
-                widenThreshold,
-                1.4f,
+            var opennessValue = Utils.SmoothStep(
+                config.WidenThresholdV2[0],
+                config.WidenThresholdV2[1],
                 baseOpenness
-            );
+            ) * config.OutputMultiplier;
+            eyeData.Openness = baseOpenness + opennessValue;
         }
 
-        if (_config.ShouldEmulateEyeSquint && baseOpenness <= squeezeThreshold)
+        if (_config.ShouldEmulateEyeSquint && baseOpenness <= config.SqueezeThresholdV2[0])
         {
-            eyeData.Openness = Utils.SmoothStep(
-                squeezeThreshold,
-                -1.4f,
+            var opennessValue = Utils.SmoothStep(
+                config.SqueezeThresholdV2[0],
+                config.SqueezeThresholdV2[1],
                 baseOpenness
-            );
+            ) * config.OutputMultiplier;
+            eyeData.Openness = baseOpenness - opennessValue;
         }
     }
 
@@ -118,6 +148,7 @@ public class V2Mapper : BaseParamMapper
                 ref eyeShapes,
                 UnifiedExpressions.BrowLowererRight,
                 UnifiedExpressions.BrowOuterUpRight,
+                ref _leftOneEuroFilter,
                 eyeOpenness,
                 _config.EyebrowThresholdRising,
                 _config.EyebrowThresholdLowering
@@ -127,6 +158,7 @@ public class V2Mapper : BaseParamMapper
                 ref eyeShapes,
                 UnifiedExpressions.BrowLowererLeft,
                 UnifiedExpressions.BrowOuterUpLeft,
+                ref _rightOneEuroFilter,
                 eyeOpenness,
                 _config.EyebrowThresholdRising,
                 _config.EyebrowThresholdLowering
@@ -142,6 +174,7 @@ public class V2Mapper : BaseParamMapper
             ref eyeShapes,
             UnifiedExpressions.BrowLowererRight,
             UnifiedExpressions.BrowOuterUpRight,
+            ref _leftOneEuroFilter,
             baseRightEyeOpenness,
             _config.EyebrowThresholdRising,
             _config.EyebrowThresholdLowering
@@ -151,6 +184,7 @@ public class V2Mapper : BaseParamMapper
             ref eyeShapes,
             UnifiedExpressions.BrowLowererLeft,
             UnifiedExpressions.BrowOuterUpLeft,
+            ref _rightOneEuroFilter,
             baseLeftEyeOpenness,
             _config.EyebrowThresholdRising,
             _config.EyebrowThresholdLowering
