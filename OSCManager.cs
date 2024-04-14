@@ -147,12 +147,33 @@ namespace ETVRTrackingModule
             // skipping , char
             currentStep++;
 
-            ParseOSCTypes(buffer, length, ref currentStep); // we purposefully ignore the types, for now
+            // todo, at one point we're gonna be getting stuf like sffi -> string, float, float, int in one message
+            // make sure to add support for that sometime
+            var types = ParseOSCTypes(buffer, length, ref currentStep);
+            switch (types){
+                case "i":
+                    msg.success = true;
+                    msg.value = new OSCInteger(ParseOSCInt(buffer, length, ref currentStep));
+                    break;
+                case "f":
+                    msg.success = true;
+                    msg.value = new OSCFloat(ParseOSCFloat(buffer, length, ref currentStep));
+                    break;
+                case "F":
+                    msg.success = true;
+                    msg.value = new OSCBool(false);
+                    break;
+                case "T":
+                    msg.success = true;
+                    msg.value = new OSCBool(true);
+                    break;
+                
+                default:
+                    _logger.LogInformation("Encountered unsupported type: {} from {}", types, msg.address);
+                    msg.success = false;
+                    break;
+            }
 
-            float value = ParseOSCFloat(buffer, length, ref currentStep);
-
-            msg.value = value;
-            msg.success = true;
             return msg;
         }
 
@@ -199,15 +220,25 @@ namespace ETVRTrackingModule
             return types;
         }
 
-        float ParseOSCFloat(byte[] buffer, int length, ref int step)
+        byte[] ConvertToBigEndian(byte[] buffer)
         {
-            var valueSection = buffer[step..length];
             if (BitConverter.IsLittleEndian)
             {
-                Array.Reverse(valueSection);
+                Array.Reverse(buffer);
             }
+            return buffer;
+        }
 
+        float ParseOSCFloat(byte[] buffer, int length, ref int step)
+        {
+            var valueSection = ConvertToBigEndian(buffer[step..length]);
             float OSCValue = BitConverter.ToSingle(valueSection, 0);
+            return OSCValue;
+        }
+
+        int ParseOSCInt(byte[] buffer, int length, ref int step) {
+            var valueSection = ConvertToBigEndian(buffer[step..length]);
+            int OSCValue = BitConverter.ToInt32(valueSection, 0);
             return OSCValue;
         }
     }

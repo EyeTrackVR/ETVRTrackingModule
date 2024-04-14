@@ -26,7 +26,16 @@ public class V1Mapper : BaseParamMapper
         var paramToMap = GetParamToMap(message.address);
         if (_parameterValues.ContainsKey(paramToMap))
         {
-            _parameterValues[paramToMap] = message.value;
+            if (message.value is not OSCFloat oscF)
+            {
+                _logger.LogInformation("ParamMapper got passed a wrong type of message: {}", message.value.Type);
+                return;
+            }
+            else
+            {
+                _parameterValues[paramToMap] = oscF.value;
+
+            }
             UpdateVRCFTEyeData(ref UnifiedTracking.Data.Eye, ref UnifiedTracking.Data.Shapes);
         }
     }
