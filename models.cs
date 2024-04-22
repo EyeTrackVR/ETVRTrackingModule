@@ -8,6 +8,16 @@
         Bool,
     }
 
+    public static class OSCValueUtils
+    {
+        public static readonly Dictionary<OSCType, (Type, Type)> OSCTypeMap = new()
+        {
+            {OSCType.Integer, (typeof(int), typeof(OSCInteger))},
+            {OSCType.Float, (typeof(float), typeof(OSCFloat))},
+            {OSCType.Bool, (typeof(bool), typeof(OSCBool))},
+        };
+    }
+
     public abstract class OSCValue
     {
         public abstract OSCType Type { get; }

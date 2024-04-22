@@ -37,7 +37,7 @@ namespace ETVRTrackingModule
 
         public override void Update()
         {
-            Thread.Sleep(0);
+            Thread.Sleep(1000);
         }
     }
 }

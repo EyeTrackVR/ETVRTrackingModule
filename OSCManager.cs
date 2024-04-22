@@ -14,7 +14,6 @@ namespace ETVRTrackingModule
     public class OSCManager
     {
         private Socket? _receiver;
-        //private Socket _sender;
 
         private ILogger _logger;
 
