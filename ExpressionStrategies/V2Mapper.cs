@@ -46,6 +46,8 @@ public class V2Mapper : BaseParamMapper
         "EyeLidRight",
     };
 
+    private bool _isSingleEye = false;
+
     public V2Mapper(ILogger logger, ref Config config) : base(logger, ref config)
     {
     }
@@ -62,25 +64,16 @@ public class V2Mapper : BaseParamMapper
             return;
         }
         else
-        {
             _parameterValues[paramToMap] = oscF.value;
-        }
 
-        var singleEyeMode = _singleEyeParamNames.Contains(paramToMap);
-        UpdateVRCFTEyeData(ref UnifiedTracking.Data.Eye, ref UnifiedTracking.Data.Shapes, paramToMap, singleEyeMode);
+        _isSingleEye = _singleEyeParamNames.Contains(paramToMap);
     }
 
-    private void UpdateVRCFTEyeData(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes,
-        string parameter, bool isSingleEyeMode = false)
+    public override void UpdateVRCFTEyeData(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes)
     {
-        if (_gazeParameters.Contains(parameter))
-            HandleEyeGaze(ref eyeData, isSingleEyeMode);
-
-        if (_opennessParameters.Contains(parameter))
-        {
-            HandleEyeOpenness(ref eyeData, ref eyeShapes, isSingleEyeMode);
-            EmulateEyebrows(ref eyeShapes, isSingleEyeMode);
-        }
+        HandleEyeGaze(ref eyeData, _isSingleEye);
+        HandleEyeOpenness(ref eyeData, ref eyeShapes, _isSingleEye);
+        EmulateEyebrows(ref eyeShapes, _isSingleEye);
     }
 
     private void HandleEyeGaze(ref UnifiedEyeData eyeData, bool isSingleEyeMode)

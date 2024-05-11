@@ -20,7 +20,6 @@ public class V1Mapper : BaseParamMapper
 
     public V1Mapper(ILogger logger, ref Config config) : base(logger, ref config)
     {
-        
     }
 
     public override void handleOSCMessage(OSCMessage message)
@@ -36,13 +35,11 @@ public class V1Mapper : BaseParamMapper
             else
             {
                 _parameterValues[paramToMap] = oscF.value;
-
             }
-            UpdateVRCFTEyeData(ref UnifiedTracking.Data.Eye, ref UnifiedTracking.Data.Shapes);
         }
     }
 
-    private void UpdateVRCFTEyeData(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes)
+    public override void UpdateVRCFTEyeData(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes)
     {
         HandleEyeGaze(ref eyeData);
         HandleEyeOpenness(ref eyeData, ref eyeShapes);

@@ -8,7 +8,7 @@ namespace ETVRTrackingModule
     public class ETVRTrackingModule : ExtTrackingModule
     {
         private OSCManager? _oscManager;
-        private ExpressionsMapper? _expressionMapper;
+        private ExpressionsMapperManager? _expressionMapper;
         public override (bool SupportsEye, bool SupportsExpression) Supported => (true, false);
         public override (bool eyeSuccess, bool expressionSuccess) Initialize(bool eyeAvailable, bool expressionAvailable)
         {
@@ -16,11 +16,11 @@ namespace ETVRTrackingModule
             var stream = GetType().Assembly.GetManifestResourceStream("ETVRTrackingModule.Assets.ETVRLogo.png");
             ModuleInformation.StaticImages = stream != null? new List<Stream> { stream } : ModuleInformation.StaticImages;
 
-            var currentPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var currentPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
             ETVRConfigManager config = new ETVRConfigManager(currentPath, Logger);
             config.LoadConfig();
             
-            _expressionMapper = new ExpressionsMapper(Logger, ref config);
+            _expressionMapper = new ExpressionsMapperManager(Logger, ref config);
             _oscManager = new OSCManager(Logger, _expressionMapper, ref config);
             _oscManager.Start();
             
@@ -37,7 +37,8 @@ namespace ETVRTrackingModule
 
         public override void Update()
         {
-            Thread.Sleep(1000);
+            _expressionMapper!.UpdateVRCFTState();
+            Thread.Sleep(5);
         }
     }
 }

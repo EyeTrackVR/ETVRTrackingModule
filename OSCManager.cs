@@ -21,14 +21,14 @@ namespace ETVRTrackingModule
         private Thread? _listeningThread;
 
         public OSCState State { get; private set; }
-        private readonly ExpressionsMapper _expressionMapper;
+        private readonly ExpressionsMapperManager _expressionMapper;
         private const int ConnectionTimeout = 10000;
 
         private readonly ETVRConfigManager _config;
         
-        public OSCManager(ILogger iLogger, ExpressionsMapper expressionsMapper, ref ETVRConfigManager configManager) {
+        public OSCManager(ILogger iLogger, ExpressionsMapperManager expressionsMapperManager, ref ETVRConfigManager configManager) {
             _logger = iLogger;
-            _expressionMapper = expressionsMapper;
+            _expressionMapper = expressionsMapperManager;
             _config = configManager; 
             configManager.RegisterListener(this.HandleConfigUpdate);
         }

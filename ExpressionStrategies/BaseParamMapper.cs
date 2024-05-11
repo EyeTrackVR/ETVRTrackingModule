@@ -30,6 +30,10 @@ public class BaseParamMapper : IMappingStategy
         return oscUrlSplit[^1];
     }
 
+    public virtual void UpdateVRCFTEyeData(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes)
+    {
+    }
+
     private protected void _emulateEyeBrow(
         ref UnifiedExpressionShape[] eyeShapes,
         UnifiedExpressions eyebrowExpressionLowerrer,
