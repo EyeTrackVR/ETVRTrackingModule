@@ -24,15 +24,19 @@ namespace ETVRTrackingModule
         private readonly ExpressionsMapperManager _expressionMapper;
         private const int ConnectionTimeout = 10000;
 
-        private readonly ETVRConfigManager _config;
+        private ETVRConfigManager _configManager;
         
-        public OSCManager(ILogger iLogger, ExpressionsMapperManager expressionsMapperManager, ref ETVRConfigManager configManager) {
+        public OSCManager(ILogger iLogger, ExpressionsMapperManager expressionsMapperManager) {
             _logger = iLogger;
             _expressionMapper = expressionsMapperManager;
-            _config = configManager; 
-            configManager.RegisterListener(this.HandleConfigUpdate);
         }
 
+        public void RegisterSelf(ref ETVRConfigManager configManager)
+        {
+            _configManager = configManager; 
+            configManager.RegisterListener(HandleConfigUpdate);
+        }
+        
         private void HandleConfigUpdate(Config config)
         {
             _terminate.Set();
@@ -41,19 +45,19 @@ namespace ETVRTrackingModule
             _terminate.Reset();
             Start();
         }
-
+        
         public void Start()
         {
             _receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             try
             {
-                _receiver.Bind(new IPEndPoint(IPAddress.Loopback, _config.Config.PortNumber));
+                _receiver.Bind(new IPEndPoint(IPAddress.Loopback, _configManager.Config.PortNumber));
                 _receiver.ReceiveTimeout = ConnectionTimeout;
                 State = OSCState.CONNECTED;
             }
             catch (Exception e)
             {
-                _logger.LogError($"Connecting to {_config.Config.PortNumber} port failed, with error: {e}");
+                _logger.LogError($"Connecting to {_configManager.Config.PortNumber} port failed, with error: {e}");
                 State = OSCState.ERROR;
             }
 
@@ -127,7 +131,7 @@ namespace ETVRTrackingModule
             {
                 return;
             }
-            _config.UpdateConfig(parts[3], oscMessage.value);
+            _configManager.UpdateConfig(parts[3], oscMessage.value);
         }
 
         private OSCMessage ParseOSCMessage(byte[] buffer, int length)

@@ -4,15 +4,15 @@ using VRCFaceTracking.Core.Params.Expressions;
 
 namespace ETVRTrackingModule.ExpressionStrategies;
 
-public class BaseParamMapper : IMappingStategy
+public class BaseParamMapper : IMappingStrategy
 {
     protected ILogger _logger;
-    protected readonly Config _config;
+    protected Config _config;
 
     protected OneEuroFilter _leftOneEuroFilter;
     protected OneEuroFilter _rightOneEuroFilter;
 
-    public BaseParamMapper(ILogger logger, ref Config config)
+    public BaseParamMapper(ILogger logger, Config config)
     {
         _leftOneEuroFilter = new OneEuroFilter(minCutoff: 0.1f, beta: 15.0f);
         _rightOneEuroFilter = new OneEuroFilter(minCutoff: 0.1f, beta: 15.0f);
@@ -20,7 +20,13 @@ public class BaseParamMapper : IMappingStategy
         _config = config;
     }
 
-    public virtual void handleOSCMessage(OSCMessage message)
+    public void UpdateConfig(Config config)
+    {
+        _config = config;
+        _logger.LogInformation("config update: {}", config.ShouldEmulateEyeWiden);
+    }
+
+    public virtual void HandleOSCMessage(OSCMessage message)
     {
     }
 

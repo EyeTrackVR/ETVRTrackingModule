@@ -18,11 +18,9 @@ public class V1Mapper : BaseParamMapper
         { "EyesY", 0f },
     };
 
-    public V1Mapper(ILogger logger, ref Config config) : base(logger, ref config)
-    {
-    }
+    public V1Mapper(ILogger logger, Config config) : base(logger, config) {}
 
-    public override void handleOSCMessage(OSCMessage message)
+    public override void HandleOSCMessage(OSCMessage message)
     {
         var paramToMap = GetParamToMap(message.address);
         if (_parameterValues.ContainsKey(paramToMap))

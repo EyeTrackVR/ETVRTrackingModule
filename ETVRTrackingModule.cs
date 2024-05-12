@@ -17,11 +17,14 @@ namespace ETVRTrackingModule
             ModuleInformation.StaticImages = stream != null? new List<Stream> { stream } : ModuleInformation.StaticImages;
 
             var currentPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
-            ETVRConfigManager config = new ETVRConfigManager(currentPath, Logger);
-            config.LoadConfig();
+            ETVRConfigManager configManager = new ETVRConfigManager(currentPath, Logger);
+            configManager.LoadConfig();
             
-            _expressionMapper = new ExpressionsMapperManager(Logger, ref config);
-            _oscManager = new OSCManager(Logger, _expressionMapper, ref config);
+            _expressionMapper = new ExpressionsMapperManager(Logger, configManager.Config);
+            _expressionMapper.RegisterSelf(ref configManager);
+            
+            _oscManager = new OSCManager(Logger, _expressionMapper);
+            _oscManager.RegisterSelf(ref configManager);
             _oscManager.Start();
             
             if (_oscManager.State == OSCState.CONNECTED) return (true, false);

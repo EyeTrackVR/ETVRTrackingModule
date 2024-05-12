@@ -48,11 +48,9 @@ public class V2Mapper : BaseParamMapper
 
     private bool _isSingleEye = false;
 
-    public V2Mapper(ILogger logger, ref Config config) : base(logger, ref config)
-    {
-    }
+    public V2Mapper(ILogger logger, Config config) : base(logger, config) {}
 
-    public override void handleOSCMessage(OSCMessage message)
+    public override void HandleOSCMessage(OSCMessage message)
     {
         string paramToMap = GetParamToMap(message.address);
         if (!_parameterValues.ContainsKey(paramToMap))
