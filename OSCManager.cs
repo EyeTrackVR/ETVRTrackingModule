@@ -154,6 +154,14 @@ namespace ETVRTrackingModule
             // make sure to add support for that sometime
             var types = ParseOSCTypes(buffer, length, ref currentStep);
             switch (types){
+                case "s":
+                    msg.success = true;
+                    var value = ParseOSCString(buffer, length, ref currentStep);
+                    if (Utils.Validators.CheckIfIPAddress(value))
+                        msg.value = new OSCIPAddress(IPAddress.Parse(value));
+                    else
+                        msg.value = new OSCString(value);
+                    break;
                 case "i":
                     msg.success = true;
                     msg.value = new OSCInteger(ParseOSCInt(buffer, length, ref currentStep));
@@ -184,42 +192,17 @@ namespace ETVRTrackingModule
         {
             string oscAddress = "";
 
-            // check if the message starts with /, every OSC adress should 
+            // check if the message starts with /, every OSC address should 
             if (buffer[0] != 47)
                 return oscAddress;
 
-            for (int i = 0; i<length; i++)
-            {
-                // we've reached the end of the address section, let's update the steps counter
-                // to point at the value section
-                if (buffer[i] == 0)
-                {
-                    // we need to ensure that we include the null terminator
-                    step = i + 1;
-                    // the size of a packet is a multiple of 4, we need to round it up 
-                    if (step % 4 != 0) { step += 4 - (step % 4); }
-                    break;
-                }
-                oscAddress += (char)buffer[i];
-            }
+            OSCValueUtils.ExtractStringData(buffer, length, ref step, out oscAddress);
             return oscAddress;
         }
 
         string ParseOSCTypes(byte[] buffer, int length, ref int step)
         {
-            string types = "";
-            // now, let's skip the types section
-            for (int i = step; i < length; i++)
-            {
-                if (buffer[i] == 0)
-                {
-                    step = i + 1;
-                    // we've reached the end of this segment, let's normalize it to 4 bytes and skip ahead
-                    if (step % 4 != 0) { step += 4 - (step % 4); }
-                    break;
-                }
-                types += (char)buffer[i];
-            }
+            OSCValueUtils.ExtractStringData(buffer, length, ref step, out var types);
             return types;
         }
 
@@ -243,6 +226,12 @@ namespace ETVRTrackingModule
             var valueSection = ConvertToBigEndian(buffer[step..length]);
             int OSCValue = BitConverter.ToInt32(valueSection, 0);
             return OSCValue;
+        }
+
+        string ParseOSCString(byte[] buffer, int length, ref int step)
+        {
+            OSCValueUtils.ExtractStringData(buffer, length, ref step, out var value);
+            return value;
         }
     }
 }

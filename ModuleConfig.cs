@@ -118,6 +118,7 @@ public class ETVRConfigManager
 
     private Dictionary<string, string> etvr_to_config_map = new()
     {
+        {"gui_VRCFTModuleIPAddress", "ListeningAddress"},
         {"gui_VRCFTModulePort", "PortNumber" },
         {"gui_ShouldEmulateEyeWiden", "ShouldEmulateEyeWiden"},
         {"gui_ShouldEmulateEyeSquint", "ShouldEmulateEyeSquint"},
