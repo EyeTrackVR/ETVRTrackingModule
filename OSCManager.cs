@@ -51,13 +51,13 @@ namespace ETVRTrackingModule
             _receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             try
             {
-                _receiver.Bind(new IPEndPoint(IPAddress.Loopback, _configManager.Config.PortNumber));
+                _receiver.Bind(new IPEndPoint(_configManager.Config.ListeningAddress, _configManager.Config.PortNumber));
                 _receiver.ReceiveTimeout = ConnectionTimeout;
                 State = OSCState.CONNECTED;
             }
             catch (Exception e)
             {
-                _logger.LogError($"Connecting to {_configManager.Config.PortNumber} port failed, with error: {e}");
+                _logger.LogError($"Connecting to {_configManager.Config.PortNumber} port at address {_configManager.Config.ListeningAddress} failed, with error: {e}");
                 State = OSCState.ERROR;
             }
 

@@ -1,5 +1,7 @@
-﻿using System.Text.Json;
+﻿using System.Net;
+using System.Text.Json;
 using System.Text.Json.Serialization;
+using ETVRTrackingModule.Utils;
 using Microsoft.Extensions.Logging;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
@@ -7,6 +9,8 @@ namespace ETVRTrackingModule;
 
 public struct Config
 {
+    [JsonConverter(typeof(IPAddressJsonConverter))]
+    [JsonInclude] public IPAddress ListeningAddress;
     [JsonInclude] public ushort PortNumber;
     [JsonInclude] public bool ShouldEmulateEyeWiden;
     [JsonInclude] public bool ShouldEmulateEyeSquint;
@@ -86,6 +90,7 @@ public struct Config
     {
         get => new()
         {
+            ListeningAddress = IPAddress.Loopback,
             PortNumber = 8889,
             ShouldEmulateEyeWiden = true,
             ShouldEmulateEyeSquint = true,
