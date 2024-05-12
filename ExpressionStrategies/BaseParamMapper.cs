@@ -55,7 +55,7 @@ public class BaseParamMapper : IMappingStrategy
         var filteredBaseOpenness = (float)oneEuroFilter.Filter(baseEyeOpenness, 1);
         if (filteredBaseOpenness >= riseThreshold)
         {
-            eyeShapes[(int)eyebrowExpressionUpper].Weight = Utils.SmoothStep(
+            eyeShapes[(int)eyebrowExpressionUpper].Weight = Utils.MathUtils.SmoothStep(
                 riseThreshold,
                 1,
                 filteredBaseOpenness
@@ -64,7 +64,7 @@ public class BaseParamMapper : IMappingStrategy
 
         if (filteredBaseOpenness <= lowerThreshold)
         {
-            eyeShapes[(int)eyebrowExpressionLowerrer].Weight = Utils.SmoothStep(
+            eyeShapes[(int)eyebrowExpressionLowerrer].Weight = Utils.MathUtils.SmoothStep(
                 lowerThreshold,
                 1,
                 filteredBaseOpenness
