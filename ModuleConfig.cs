@@ -92,9 +92,9 @@ public struct Config
         {
             ListeningAddress = IPAddress.Loopback,
             PortNumber = 8889,
-            ShouldEmulateEyeWiden = true,
-            ShouldEmulateEyeSquint = true,
-            ShouldEmulateEyebrows = true,
+            ShouldEmulateEyeWiden = false,
+            ShouldEmulateEyeSquint = false,
+            ShouldEmulateEyebrows = false,
             WidenThresholdV1 = new []{ 0.95f, 1f },
             WidenThresholdV2 = new []{ 0.95f, 1.05f },
             SqueezeThresholdV1 = new []{ 0.05f, 0.5f },
