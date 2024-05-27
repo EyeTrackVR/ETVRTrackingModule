@@ -166,9 +166,10 @@ public class V2Mapper : BaseParamMapper
 
             return;
         }
-
-        var baseRightEyeOpenness = _parameterValues["RightEyeLidExpandedSqueeze"];
-        var baseLeftEyeOpenness = _parameterValues["LeftEyeLidExpandedSqueeze"];
+        
+        
+        var baseRightEyeOpenness = _parameterValues["EyeLidLeft"];
+        var baseLeftEyeOpenness = _parameterValues["EyeLidRight"];
 
         _emulateEyeBrow(
             ref eyeShapes,
