@@ -87,7 +87,11 @@ public class V1Mapper : BaseParamMapper
                 baseEyeOpenness
             ) * config.OutputMultiplier;
             eyeShapes[(int)widenParam].Weight = widenValue;
-            eyeShapes[(int)squintParam].Weight = 0;
+        }
+        // we gotta reset it manually, otherwise VRCFT will just persist it, leading to wonky behaviour
+        else
+        {
+            eyeShapes[(int)widenParam].Weight = 0;
         }
 
         if (_config.ShouldEmulateEyeSquint && baseEyeOpenness <= config.SqueezeThresholdV1[0])
@@ -100,6 +104,11 @@ public class V1Mapper : BaseParamMapper
             ) * config.OutputMultiplier;
             eyeShapes[(int)squintParam].Weight = squintValue;
         }
+        else
+        {
+            eyeShapes[(int)squintParam].Weight = 0;
+        }
+        
     }
 
     private void EmulateEyeBrows(ref UnifiedExpressionShape[] eyeShapes)
