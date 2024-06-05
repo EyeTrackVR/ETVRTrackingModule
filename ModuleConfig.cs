@@ -95,12 +95,12 @@ public struct Config
             ShouldEmulateEyeWiden = false,
             ShouldEmulateEyeSquint = false,
             ShouldEmulateEyebrows = false,
-            WidenThresholdV1 = new []{ 0.95f, 1f },
-            WidenThresholdV2 = new []{ 0.95f, 1.05f },
-            SqueezeThresholdV1 = new []{ 0.05f, 0.5f },
-            SqueezeThresholdV2 = new []{ 0.05f, -1f },
-            EyebrowThresholdRising = 0.9f,
-            EyebrowThresholdLowering = 0.05f,
+            WidenThresholdV1 = new []{ 0.60f, 1f },
+            WidenThresholdV2 = new []{ 0.60f, 1.05f },
+            SqueezeThresholdV1 = new []{ 0.07f, 0.5f },
+            SqueezeThresholdV2 = new []{ 0.07f, -1f },
+            EyebrowThresholdRising = 0.8f,
+            EyebrowThresholdLowering = 0.15f,
             OutputMultiplier = 1f,
         };
     }
