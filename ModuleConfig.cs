@@ -90,7 +90,7 @@ public struct Config
     {
         get => new()
         {
-            ListeningAddress = IPAddress.Loopback,
+            ListeningAddress = IPAddress.Any,
             PortNumber = 8889,
             ShouldEmulateEyeWiden = false,
             ShouldEmulateEyeSquint = false,
