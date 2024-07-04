@@ -46,32 +46,32 @@ public class V2Mapper : BaseParamMapper
         "EyeLidRight",
     };
 
-    public V2Mapper(ILogger logger, ref Config config) : base(logger, ref config)
-    {
-    }
+    private bool _isSingleEye = false;
 
-    public override void handleOSCMessage(OSCMessage message)
+    public V2Mapper(ILogger logger, Config config) : base(logger, config) {}
+
+    public override void HandleOSCMessage(OSCMessage message)
     {
         string paramToMap = GetParamToMap(message.address);
         if (!_parameterValues.ContainsKey(paramToMap))
             return;
 
-        _parameterValues[paramToMap] = message.value;
-        var singleEyeMode = _singleEyeParamNames.Contains(paramToMap);
-        UpdateVRCFTEyeData(ref UnifiedTracking.Data.Eye, ref UnifiedTracking.Data.Shapes, paramToMap, singleEyeMode);
+        if (message.value is not OSCFloat oscF)
+        {
+            _logger.LogInformation("ParamMapper got passed a wrong type of message: {}", message.value.Type);
+            return;
+        }
+        else
+            _parameterValues[paramToMap] = oscF.value;
+
+        _isSingleEye = _singleEyeParamNames.Contains(paramToMap);
     }
 
-    private void UpdateVRCFTEyeData(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes,
-        string parameter, bool isSingleEyeMode = false)
+    public override void UpdateVRCFTEyeData(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes)
     {
-        if (_gazeParameters.Contains(parameter))
-            HandleEyeGaze(ref eyeData, isSingleEyeMode);
-
-        if (_opennessParameters.Contains(parameter))
-        {
-            HandleEyeOpenness(ref eyeData, ref eyeShapes, isSingleEyeMode);
-            EmulateEyebrows(ref eyeShapes, isSingleEyeMode);
-        }
+        HandleEyeGaze(ref eyeData, _isSingleEye);
+        HandleEyeOpenness(ref eyeData, ref eyeShapes, _isSingleEye);
+        EmulateEyebrows(ref eyeShapes, _isSingleEye);
     }
 
     private void HandleEyeGaze(ref UnifiedEyeData eyeData, bool isSingleEyeMode)
@@ -119,7 +119,7 @@ public class V2Mapper : BaseParamMapper
         eyeData.Openness = baseOpenness;
         if (_config.ShouldEmulateEyeWiden && baseOpenness >= config.WidenThresholdV2[0])
         {
-            var opennessValue = Utils.SmoothStep(
+            var opennessValue = Utils.MathUtils.SmoothStep(
                 config.WidenThresholdV2[0],
                 config.WidenThresholdV2[1],
                 baseOpenness
@@ -129,7 +129,7 @@ public class V2Mapper : BaseParamMapper
 
         if (_config.ShouldEmulateEyeSquint && baseOpenness <= config.SqueezeThresholdV2[0])
         {
-            var opennessValue = Utils.SmoothStep(
+            var opennessValue = Utils.MathUtils.SmoothStep(
                 config.SqueezeThresholdV2[0],
                 config.SqueezeThresholdV2[1],
                 baseOpenness
@@ -166,9 +166,10 @@ public class V2Mapper : BaseParamMapper
 
             return;
         }
-
-        var baseRightEyeOpenness = _parameterValues["RightEyeLidExpandedSqueeze"];
-        var baseLeftEyeOpenness = _parameterValues["LeftEyeLidExpandedSqueeze"];
+        
+        
+        var baseRightEyeOpenness = _parameterValues["EyeLidLeft"];
+        var baseLeftEyeOpenness = _parameterValues["EyeLidRight"];
 
         _emulateEyeBrow(
             ref eyeShapes,

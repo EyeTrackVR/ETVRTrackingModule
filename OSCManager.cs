@@ -14,7 +14,6 @@ namespace ETVRTrackingModule
     public class OSCManager
     {
         private Socket? _receiver;
-        //private Socket _sender;
 
         private ILogger _logger;
 
@@ -22,18 +21,22 @@ namespace ETVRTrackingModule
         private Thread? _listeningThread;
 
         public OSCState State { get; private set; }
-        private readonly ExpressionsMapper _expressionMapper;
+        private readonly ExpressionsMapperManager _expressionMapper;
         private const int ConnectionTimeout = 10000;
 
-        private readonly ETVRConfigManager _config;
+        private ETVRConfigManager _configManager;
         
-        public OSCManager(ILogger iLogger, ExpressionsMapper expressionsMapper, ref ETVRConfigManager configManager) {
+        public OSCManager(ILogger iLogger, ExpressionsMapperManager expressionsMapperManager) {
             _logger = iLogger;
-            _expressionMapper = expressionsMapper;
-            _config = configManager; 
-            configManager.RegisterListener(this.HandleConfigUpdate);
+            _expressionMapper = expressionsMapperManager;
         }
 
+        public void RegisterSelf(ref ETVRConfigManager configManager)
+        {
+            _configManager = configManager; 
+            configManager.RegisterListener(HandleConfigUpdate);
+        }
+        
         private void HandleConfigUpdate(Config config)
         {
             _terminate.Set();
@@ -42,19 +45,19 @@ namespace ETVRTrackingModule
             _terminate.Reset();
             Start();
         }
-
+        
         public void Start()
         {
             _receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             try
             {
-                _receiver.Bind(new IPEndPoint(IPAddress.Loopback, _config.Config.PortNumber));
+                _receiver.Bind(new IPEndPoint(_configManager.Config.ListeningAddress, _configManager.Config.PortNumber));
                 _receiver.ReceiveTimeout = ConnectionTimeout;
                 State = OSCState.CONNECTED;
             }
             catch (Exception e)
             {
-                _logger.LogError($"Connecting to {_config.Config.PortNumber} port failed, with error: {e}");
+                _logger.LogError($"Connecting to {_configManager.Config.PortNumber} port at address {_configManager.Config.ListeningAddress} failed, with error: {e}");
                 State = OSCState.ERROR;
             }
 
@@ -128,7 +131,7 @@ namespace ETVRTrackingModule
             {
                 return;
             }
-            _config.UpdateConfig(parts[3], oscMessage.value);
+            _configManager.UpdateConfig(parts[3], oscMessage.value);
         }
 
         private OSCMessage ParseOSCMessage(byte[] buffer, int length)
@@ -147,12 +150,41 @@ namespace ETVRTrackingModule
             // skipping , char
             currentStep++;
 
-            ParseOSCTypes(buffer, length, ref currentStep); // we purposefully ignore the types, for now
+            // todo, at one point we're gonna be getting stuf like sffi -> string, float, float, int in one message
+            // make sure to add support for that sometime
+            var types = ParseOSCTypes(buffer, length, ref currentStep);
+            switch (types){
+                case "s":
+                    msg.success = true;
+                    var value = ParseOSCString(buffer, length, ref currentStep);
+                    if (Utils.Validators.CheckIfIPAddress(value))
+                        msg.value = new OSCIPAddress(IPAddress.Parse(value));
+                    else
+                        msg.value = new OSCString(value);
+                    break;
+                case "i":
+                    msg.success = true;
+                    msg.value = new OSCInteger(ParseOSCInt(buffer, length, ref currentStep));
+                    break;
+                case "f":
+                    msg.success = true;
+                    msg.value = new OSCFloat(ParseOSCFloat(buffer, length, ref currentStep));
+                    break;
+                case "F":
+                    msg.success = true;
+                    msg.value = new OSCBool(false);
+                    break;
+                case "T":
+                    msg.success = true;
+                    msg.value = new OSCBool(true);
+                    break;
+                
+                default:
+                    _logger.LogInformation("Encountered unsupported type: {} from {}", types, msg.address);
+                    msg.success = false;
+                    break;
+            }
 
-            float value = ParseOSCFloat(buffer, length, ref currentStep);
-
-            msg.value = value;
-            msg.success = true;
             return msg;
         }
 
@@ -160,55 +192,46 @@ namespace ETVRTrackingModule
         {
             string oscAddress = "";
 
-            // check if the message starts with /, every OSC adress should 
+            // check if the message starts with /, every OSC address should 
             if (buffer[0] != 47)
                 return oscAddress;
 
-            for (int i = 0; i<length; i++)
-            {
-                // we've reached the end of the address section, let's update the steps counter
-                // to point at the value section
-                if (buffer[i] == 0)
-                {
-                    // we need to ensure that we include the null terminator
-                    step = i + 1;
-                    // the size of a packet is a multiple of 4, we need to round it up 
-                    if (step % 4 != 0) { step += 4 - (step % 4); }
-                    break;
-                }
-                oscAddress += (char)buffer[i];
-            }
+            OSCValueUtils.ExtractStringData(buffer, length, ref step, out oscAddress);
             return oscAddress;
         }
 
         string ParseOSCTypes(byte[] buffer, int length, ref int step)
         {
-            string types = "";
-            // now, let's skip the types section
-            for (int i = step; i < length; i++)
-            {
-                if (buffer[i] == 0)
-                {
-                    step = i + 1;
-                    // we've reached the end of this segment, let's normalize it to 4 bytes and skip ahead
-                    if (step % 4 != 0) { step += 4 - (step % 4); }
-                    break;
-                }
-                types += (char)buffer[i];
-            }
+            OSCValueUtils.ExtractStringData(buffer, length, ref step, out var types);
             return types;
+        }
+
+        byte[] ConvertToBigEndian(byte[] buffer)
+        {
+            if (BitConverter.IsLittleEndian)
+            {
+                Array.Reverse(buffer);
+            }
+            return buffer;
         }
 
         float ParseOSCFloat(byte[] buffer, int length, ref int step)
         {
-            var valueSection = buffer[step..length];
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(valueSection);
-            }
-
+            var valueSection = ConvertToBigEndian(buffer[step..length]);
             float OSCValue = BitConverter.ToSingle(valueSection, 0);
             return OSCValue;
+        }
+
+        int ParseOSCInt(byte[] buffer, int length, ref int step) {
+            var valueSection = ConvertToBigEndian(buffer[step..length]);
+            int OSCValue = BitConverter.ToInt32(valueSection, 0);
+            return OSCValue;
+        }
+
+        string ParseOSCString(byte[] buffer, int length, ref int step)
+        {
+            OSCValueUtils.ExtractStringData(buffer, length, ref step, out var value);
+            return value;
         }
     }
 }

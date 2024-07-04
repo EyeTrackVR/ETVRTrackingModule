@@ -4,15 +4,15 @@ using VRCFaceTracking.Core.Params.Expressions;
 
 namespace ETVRTrackingModule.ExpressionStrategies;
 
-public class BaseParamMapper : IMappingStategy
+public class BaseParamMapper : IMappingStrategy
 {
     protected ILogger _logger;
-    protected readonly Config _config;
+    protected Config _config;
 
     protected OneEuroFilter _leftOneEuroFilter;
     protected OneEuroFilter _rightOneEuroFilter;
 
-    public BaseParamMapper(ILogger logger, ref Config config)
+    public BaseParamMapper(ILogger logger, Config config)
     {
         _leftOneEuroFilter = new OneEuroFilter(minCutoff: 0.1f, beta: 15.0f);
         _rightOneEuroFilter = new OneEuroFilter(minCutoff: 0.1f, beta: 15.0f);
@@ -20,7 +20,13 @@ public class BaseParamMapper : IMappingStategy
         _config = config;
     }
 
-    public virtual void handleOSCMessage(OSCMessage message)
+    public void UpdateConfig(Config config)
+    {
+        _config = config;
+        _logger.LogInformation("config update: {}", config.ShouldEmulateEyeWiden);
+    }
+
+    public virtual void HandleOSCMessage(OSCMessage message)
     {
     }
 
@@ -28,6 +34,10 @@ public class BaseParamMapper : IMappingStategy
     {
         var oscUrlSplit = oscAddress.Split("/");
         return oscUrlSplit[^1];
+    }
+
+    public virtual void UpdateVRCFTEyeData(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes)
+    {
     }
 
     private protected void _emulateEyeBrow(
@@ -45,7 +55,7 @@ public class BaseParamMapper : IMappingStategy
         var filteredBaseOpenness = (float)oneEuroFilter.Filter(baseEyeOpenness, 1);
         if (filteredBaseOpenness >= riseThreshold)
         {
-            eyeShapes[(int)eyebrowExpressionUpper].Weight = Utils.SmoothStep(
+            eyeShapes[(int)eyebrowExpressionUpper].Weight = Utils.MathUtils.SmoothStep(
                 riseThreshold,
                 1,
                 filteredBaseOpenness
@@ -54,7 +64,7 @@ public class BaseParamMapper : IMappingStategy
 
         if (filteredBaseOpenness <= lowerThreshold)
         {
-            eyeShapes[(int)eyebrowExpressionLowerrer].Weight = Utils.SmoothStep(
+            eyeShapes[(int)eyebrowExpressionLowerrer].Weight = Utils.MathUtils.SmoothStep(
                 lowerThreshold,
                 1,
                 filteredBaseOpenness

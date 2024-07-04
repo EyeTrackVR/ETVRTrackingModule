@@ -8,7 +8,7 @@ namespace ETVRTrackingModule
     public class ETVRTrackingModule : ExtTrackingModule
     {
         private OSCManager? _oscManager;
-        private ExpressionsMapper? _expressionMapper;
+        private ExpressionsMapperManager? _expressionMapper;
         public override (bool SupportsEye, bool SupportsExpression) Supported => (true, false);
         public override (bool eyeSuccess, bool expressionSuccess) Initialize(bool eyeAvailable, bool expressionAvailable)
         {
@@ -16,12 +16,15 @@ namespace ETVRTrackingModule
             var stream = GetType().Assembly.GetManifestResourceStream("ETVRTrackingModule.Assets.ETVRLogo.png");
             ModuleInformation.StaticImages = stream != null? new List<Stream> { stream } : ModuleInformation.StaticImages;
 
-            var currentPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            ETVRConfigManager config = new ETVRConfigManager(currentPath, Logger);
-            config.LoadConfig();
+            var currentPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
+            ETVRConfigManager configManager = new ETVRConfigManager(currentPath, Logger);
+            configManager.LoadConfig();
             
-            _expressionMapper = new ExpressionsMapper(Logger, ref config);
-            _oscManager = new OSCManager(Logger, _expressionMapper, ref config);
+            _expressionMapper = new ExpressionsMapperManager(Logger, configManager.Config);
+            _expressionMapper.RegisterSelf(ref configManager);
+            
+            _oscManager = new OSCManager(Logger, _expressionMapper);
+            _oscManager.RegisterSelf(ref configManager);
             _oscManager.Start();
             
             if (_oscManager.State == OSCState.CONNECTED) return (true, false);
@@ -37,7 +40,8 @@ namespace ETVRTrackingModule
 
         public override void Update()
         {
-            Thread.Sleep(100);
+            _expressionMapper!.UpdateVRCFTState();
+            Thread.Sleep(5);
         }
     }
 }

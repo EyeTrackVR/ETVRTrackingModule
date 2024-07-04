@@ -1,5 +1,7 @@
-﻿using System.Text.Json;
+﻿using System.Net;
+using System.Text.Json;
 using System.Text.Json.Serialization;
+using ETVRTrackingModule.Utils;
 using Microsoft.Extensions.Logging;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
@@ -7,6 +9,8 @@ namespace ETVRTrackingModule;
 
 public struct Config
 {
+    [JsonConverter(typeof(IPAddressJsonConverter))]
+    [JsonInclude] public IPAddress ListeningAddress;
     [JsonInclude] public ushort PortNumber;
     [JsonInclude] public bool ShouldEmulateEyeWiden;
     [JsonInclude] public bool ShouldEmulateEyeSquint;
@@ -86,16 +90,17 @@ public struct Config
     {
         get => new()
         {
+            ListeningAddress = IPAddress.Any,
             PortNumber = 8889,
-            ShouldEmulateEyeWiden = true,
-            ShouldEmulateEyeSquint = true,
-            ShouldEmulateEyebrows = true,
-            WidenThresholdV1 = new []{ 0.95f, 1f },
-            WidenThresholdV2 = new []{ 0.95f, 1.05f },
-            SqueezeThresholdV1 = new []{ 0.05f, 0.5f },
-            SqueezeThresholdV2 = new []{ 0.05f, -1f },
-            EyebrowThresholdRising = 0.9f,
-            EyebrowThresholdLowering = 0.05f,
+            ShouldEmulateEyeWiden = false,
+            ShouldEmulateEyeSquint = false,
+            ShouldEmulateEyebrows = false,
+            WidenThresholdV1 = new []{ 0.60f, 1f },
+            WidenThresholdV2 = new []{ 0.60f, 1.05f },
+            SqueezeThresholdV1 = new []{ 0.07f, 0.5f },
+            SqueezeThresholdV2 = new []{ 0.07f, -1f },
+            EyebrowThresholdRising = 0.8f,
+            EyebrowThresholdLowering = 0.15f,
             OutputMultiplier = 1f,
         };
     }
@@ -110,6 +115,37 @@ public class ETVRConfigManager
 
     private List<Action<Config>> _listeners;
     private ILogger _logger;
+
+    private Dictionary<string, string> etvr_to_config_map = new()
+    {
+        {"gui_VRCFTModulePort", "PortNumber" },
+        {"gui_ShouldEmulateEyeWiden", "ShouldEmulateEyeWiden"},
+        {"gui_ShouldEmulateEyeSquint", "ShouldEmulateEyeSquint"},
+        {"gui_ShouldEmulateEyebrows", "ShouldEmulateEyebrows"},
+        {"gui_WidenThresholdV1_min", "WidenThresholdV1"},
+        {"gui_WidenThresholdV1_max", "WidenThresholdV1"},
+        {"gui_WidenThresholdV2_min", "WidenThresholdV2"},
+        {"gui_WidenThresholdV2_max", "WidenThresholdV2"},
+        {"gui_SqueezeThresholdV1_min", "SqueezeThresholdV1"},
+        {"gui_SqueezeThresholdV1_max", "SqueezeThresholdV1"},
+        {"gui_SqueezeThresholdV2_min", "SqueezeThresholdV2"},
+        {"gui_SqueezeThresholdV2_max", "SqueezeThresholdV2"},
+        {"gui_EyebrowThresholdRising", "EyebrowThresholdRising"},
+        {"gui_EyebrowThresholdLowering", "EyebrowThresholdLowering"},
+        {"gui_OutputMultiplier", "OutputMultiplier"},
+    };
+
+    private List<string> etvr_half_values = new()
+    {
+        "gui_WidenThresholdV1_min",
+        "gui_WidenThresholdV1_max",
+        "gui_WidenThresholdV2_min",
+        "gui_WidenThresholdV2_max",
+        "gui_SqueezeThresholdV1_min",
+        "gui_SqueezeThresholdV1_max",
+        "gui_SqueezeThresholdV2_min",
+        "gui_SqueezeThresholdV2_max",
+    };
 
     public ETVRConfigManager(string configFilePath, ILogger logger)
     {
@@ -148,10 +184,32 @@ public class ETVRConfigManager
         File.WriteAllText(_configFilePath, jsonData);
     }
 
-    public void UpdateConfig<T>(string fieldName, T value)
+    public void UpdateConfig(string OSCFieldName, OSCValue value)
+    {
+        string? fieldName;
+        if (!etvr_to_config_map.TryGetValue(OSCFieldName, out fieldName))
+            return;
+
+        (Type, Type) mappers;
+        if (!OSCValueUtils.OSCTypeMap.TryGetValue(value.Type, out mappers))
+            return;
+
+        var oscValueInstance = Convert.ChangeType(value, mappers.Item2);
+        var field = oscValueInstance.GetType().GetField("value");
+        var oscValue = field!.GetValue(oscValueInstance);
+        
+        if (etvr_half_values.Contains(OSCFieldName))
+            HandleHalfFields(OSCFieldName, fieldName, oscValue);
+        else
+            HandleSingleField(fieldName, oscValue);
+
+        SaveConfig();
+        NotifyListeners();
+    }
+
+    private void HandleSingleField<T>(string fieldName, T value)
     {
         var field = _config.GetType().GetField(fieldName);
-
         if (field is null) return;
 
         object boxedConfig = _config;
@@ -162,9 +220,35 @@ public class ETVRConfigManager
         _logger.LogInformation($"[UPDATE] updating field {field} to {safeValue}");
         field.SetValue(boxedConfig, safeValue);
         _config = (Config)boxedConfig;
+    }
 
-        SaveConfig();
-        NotifyListeners();
+    private void HandleHalfFields<T>(string OSCFieldName, string fieldName, T value)
+    {
+        var propertyInfo = _config.GetType().GetProperty(fieldName);
+        if (propertyInfo is null) return;
+        
+        var oldValueInfo = propertyInfo.GetValue(_config);
+        if (oldValueInfo is null) return;
+
+        object boxedConfig = _config;
+
+        var minMaxIndice = OSCFieldName.Split("_").Last() == "min" ? 1 : 0;
+        var valueToPreserve = ((Array)oldValueInfo).GetValue(minMaxIndice)!;
+
+        // TODO I kinda hate this, preferably this should support any type, but I don't have any 
+        // idea on how to do that yet
+        var safeValue = Convert.ChangeType(value, typeof(float))!;
+        float[] updatedValue; 
+        
+        if(minMaxIndice == 0)
+            updatedValue = new float[] { (float)valueToPreserve, (float)safeValue };
+        else
+            updatedValue = new float[] { (float)safeValue, (float)valueToPreserve };
+
+        _logger.LogInformation($"[UPDATE] updating field {fieldName} to [{updatedValue[0]}, {updatedValue[1]}]");
+
+        propertyInfo.SetValue(boxedConfig, updatedValue);
+        _config = (Config)boxedConfig;
     }
 
     private void NotifyListeners()

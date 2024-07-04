@@ -2,7 +2,7 @@
 
 namespace ETVRTrackingModule.ExpressionStrategies;
 
-public interface IMappingStategy
+public interface IMappingStrategy
 {
-    public void handleOSCMessage(OSCMessage message);
+    public void HandleOSCMessage(OSCMessage message);
 }

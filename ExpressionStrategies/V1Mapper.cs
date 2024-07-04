@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Security.Cryptography.X509Certificates;
+using Microsoft.Extensions.Logging;
 using VRCFaceTracking;
 using VRCFaceTracking.Core.Params.Data;
 using VRCFaceTracking.Core.Params.Expressions;
@@ -17,21 +18,26 @@ public class V1Mapper : BaseParamMapper
         { "EyesY", 0f },
     };
 
-    public V1Mapper(ILogger logger, ref Config config) : base(logger, ref config)
-    {
-    }
+    public V1Mapper(ILogger logger, Config config) : base(logger, config) {}
 
-    public override void handleOSCMessage(OSCMessage message)
+    public override void HandleOSCMessage(OSCMessage message)
     {
         var paramToMap = GetParamToMap(message.address);
         if (_parameterValues.ContainsKey(paramToMap))
         {
-            _parameterValues[paramToMap] = message.value;
-            UpdateVRCFTEyeData(ref UnifiedTracking.Data.Eye, ref UnifiedTracking.Data.Shapes);
+            if (message.value is not OSCFloat oscF)
+            {
+                _logger.LogInformation("ParamMapper got passed a wrong type of message: {}", message.value.Type);
+                return;
+            }
+            else
+            {
+                _parameterValues[paramToMap] = oscF.value;
+            }
         }
     }
 
-    private void UpdateVRCFTEyeData(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes)
+    public override void UpdateVRCFTEyeData(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes)
     {
         HandleEyeGaze(ref eyeData);
         HandleEyeOpenness(ref eyeData, ref eyeShapes);
@@ -75,25 +81,34 @@ public class V1Mapper : BaseParamMapper
         if (_config.ShouldEmulateEyeWiden && baseEyeOpenness >= config.WidenThresholdV1[0])
         {
             eye.Openness = 0.8f;
-            var widenValue = Utils.SmoothStep(
+            var widenValue = Utils.MathUtils.SmoothStep(
                 config.WidenThresholdV1[0],
                 config.WidenThresholdV1[1],
                 baseEyeOpenness
             ) * config.OutputMultiplier;
             eyeShapes[(int)widenParam].Weight = widenValue;
-            eyeShapes[(int)squintParam].Weight = 0;
+        }
+        // we gotta reset it manually, otherwise VRCFT will just persist it, leading to wonky behaviour
+        else
+        {
+            eyeShapes[(int)widenParam].Weight = 0;
         }
 
         if (_config.ShouldEmulateEyeSquint && baseEyeOpenness <= config.SqueezeThresholdV1[0])
         {
             eyeShapes[(int)widenParam].Weight = 0;
-            var squintValue = Utils.SmoothStep(
+            var squintValue = Utils.MathUtils.SmoothStep(
                 config.SqueezeThresholdV1[1],
                 config.SqueezeThresholdV1[0],
                 baseEyeOpenness
             ) * config.OutputMultiplier;
             eyeShapes[(int)squintParam].Weight = squintValue;
         }
+        else
+        {
+            eyeShapes[(int)squintParam].Weight = 0;
+        }
+        
     }
 
     private void EmulateEyeBrows(ref UnifiedExpressionShape[] eyeShapes)

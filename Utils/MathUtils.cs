@@ -1,6 +1,6 @@
-﻿namespace ETVRTrackingModule;
+﻿namespace ETVRTrackingModule.Utils;
 
-public static class Utils
+public static class MathUtils
 {
     public static float SmoothStep(float edge0, float edge1, float x)
     {
