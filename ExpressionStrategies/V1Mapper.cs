@@ -15,6 +15,7 @@ public class V1Mapper : BaseParamMapper
         { "LeftEyeLidExpandedSqueeze", 1f },
         { "LeftEyeX", 0f },
         { "RightEyeX", 0f },
+        { "EyesDilation", 0f },
         { "EyesY", 0f },
     };
 
@@ -23,33 +24,38 @@ public class V1Mapper : BaseParamMapper
     public override void HandleOSCMessage(OSCMessage message)
     {
         var paramToMap = GetParamToMap(message.address);
-        if (_parameterValues.ContainsKey(paramToMap))
+        if (!_parameterValues.ContainsKey(paramToMap))
+            return;
+        
+        if (message.value is not OSCFloat oscF)
         {
-            if (message.value is not OSCFloat oscF)
-            {
-                _logger.LogInformation("ParamMapper got passed a wrong type of message: {}", message.value.Type);
-                return;
-            }
-            else
-            {
-                _parameterValues[paramToMap] = oscF.value;
-            }
+            _logger.LogInformation("ParamMapper got passed a wrong type of message: {}", message.value.Type);
+            return;
         }
+        
+        _parameterValues[paramToMap] = oscF.value;
     }
 
     public override void UpdateVRCFTEyeData(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes)
     {
         HandleEyeGaze(ref eyeData);
+        HandleEyeDilation(ref eyeData);
         HandleEyeOpenness(ref eyeData, ref eyeShapes);
         EmulateEyeBrows(ref eyeShapes);
     }
-
+    
     private void HandleEyeGaze(ref UnifiedEyeData eyeData)
     {
         eyeData.Right.Gaze = new Vector2(_parameterValues["RightEyeX"], _parameterValues["EyesY"]);
         eyeData.Left.Gaze = new Vector2(_parameterValues["LeftEyeX"], _parameterValues["EyesY"]);
     }
 
+    private void HandleEyeDilation(ref UnifiedEyeData eyeData)
+    {
+        eyeData.Left.PupilDiameter_MM = _parameterValues["EyesDilation"];
+        eyeData.Right.PupilDiameter_MM = _parameterValues["EyesDilation"];
+    }
+    
     private void HandleEyeOpenness(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes)
     {
         // so how it works, currently we cannot output values above 1.0 and below 0.0

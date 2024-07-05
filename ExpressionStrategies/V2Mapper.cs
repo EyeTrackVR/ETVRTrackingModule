@@ -27,6 +27,7 @@ public class V2Mapper : BaseParamMapper
         { "EyeRightY", 0f },
         { "EyeLidLeft", 1f },
         { "EyeLidRight", 1f },
+        { "PupilDilation", 0f }, 
     };
 
     private readonly string[] _gazeParameters =
@@ -52,7 +53,7 @@ public class V2Mapper : BaseParamMapper
 
     public override void HandleOSCMessage(OSCMessage message)
     {
-        string paramToMap = GetParamToMap(message.address);
+        var paramToMap = GetParamToMap(message.address);
         if (!_parameterValues.ContainsKey(paramToMap))
             return;
 
@@ -61,8 +62,8 @@ public class V2Mapper : BaseParamMapper
             _logger.LogInformation("ParamMapper got passed a wrong type of message: {}", message.value.Type);
             return;
         }
-        else
-            _parameterValues[paramToMap] = oscF.value;
+        
+        _parameterValues[paramToMap] = oscF.value;
 
         _isSingleEye = _singleEyeParamNames.Contains(paramToMap);
     }
@@ -70,6 +71,7 @@ public class V2Mapper : BaseParamMapper
     public override void UpdateVRCFTEyeData(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes)
     {
         HandleEyeGaze(ref eyeData, _isSingleEye);
+        HandleEyeDilation(ref eyeData);
         HandleEyeOpenness(ref eyeData, ref eyeShapes, _isSingleEye);
         EmulateEyebrows(ref eyeShapes, _isSingleEye);
     }
@@ -87,7 +89,13 @@ public class V2Mapper : BaseParamMapper
         eyeData.Left.Gaze = new Vector2(_parameterValues["EyeLeftX"], _parameterValues["EyeLeftY"]);
         eyeData.Right.Gaze = new Vector2(_parameterValues["EyeRightX"], _parameterValues["EyeRightY"]);
     }
-
+    
+    private void HandleEyeDilation(ref UnifiedEyeData eyeData)
+    {
+        eyeData.Left.PupilDiameter_MM = _parameterValues["PupilDilation"];
+        eyeData.Right.PupilDiameter_MM = _parameterValues["PupilDilation"];
+    }
+    
     private void HandleEyeOpenness(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes,
         bool isSingleEyeMode = false)
     {
