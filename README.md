@@ -74,18 +74,19 @@ Additionally to those params:
 Eye widen is supported by default in v2 params, for v1 we're emulating it. Every time eye openness reported by ETVR
 reaches above certain threshold, we try and smoothly widen the eye a little bit. 
 
-Squinting. For v2 it's defined as a separate parameter, support for it will be coming in the next couple of updates. For v1 it is done the same way as eye widen.
+Squinting. For v2 it's defined as a separate parameter. For v1 it is done the same way as eye widen.
 
 ##### Eyebrows emulation  
 
-This will be coming in the next couple of updates. 
+Eyebrows emulation is now supported as well, for both v1 and v2(UE) parameters. It works by smoothly adjusting VRCFTs parameters after openness reaches a certain threshold. 
 
-## What's planned: 
+#### Squinting support for V2 parameters  
+ 
+Implemented similarly to widen, we smoothly adjust proper expressions for v1 and v2 params when we detect eye openness has reached a very low threshold.
 
-- Squinting support for V2 parameters 
-- Eyebrows emulation using eye openness values 
+#### Other stuff
 - [More dev-ish stuff] unified protocol for talking with ETVR
-- Configuration for adjusting emulation thresholds for squinting / widen if need be and OSC Port in case of conflicts 
+- Configuration for adjusting emulation thresholds for squinting / widen / eyebrows if need be and OSC Port in case of conflicts 
 
 ## How to contribute:
 Pretty much the same way as with [EyetrackVR Project](https://github.com/EyeTrackVR/eyetrackvr). 
