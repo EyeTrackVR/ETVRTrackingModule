@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using VRCFaceTracking;
 using VRCFaceTracking.Core.Params.Data;
 using VRCFaceTracking.Core.Params.Expressions;
@@ -12,7 +12,8 @@ public class V2Mapper : BaseParamMapper
     {
         "EyeX",
         "EyeY",
-        "EyeLid"
+        "EyeLid",
+        "BrowExpression"
     };
 
     private Dictionary<string, float> _parameterValues = new()
@@ -27,7 +28,10 @@ public class V2Mapper : BaseParamMapper
         { "EyeRightY", 0f },
         { "EyeLidLeft", 1f },
         { "EyeLidRight", 1f },
-        { "PupilDilation", 0f }, 
+        { "PupilDilation", 0f },
+        { "BrowExpression", 0.5f },
+        { "BrowExpressionLeft", 0.5f },
+        { "BrowExpressionRight", 0.5f }, 
     };
 
     private readonly string[] _gazeParameters =
@@ -73,7 +77,52 @@ public class V2Mapper : BaseParamMapper
         HandleEyeGaze(ref eyeData, _isSingleEye);
         HandleEyeDilation(ref eyeData);
         HandleEyeOpenness(ref eyeData, ref eyeShapes, _isSingleEye);
+        HandleEyebrows(ref eyeShapes, _isSingleEye);
         EmulateEyebrows(ref eyeShapes, _isSingleEye);
+    }
+
+    private void HandleEyebrows(ref UnifiedExpressionShape[] eyeShapes, bool isSingleEyeMode = false)
+    {
+        if (isSingleEyeMode)
+        {
+            var browExp = _parameterValues["BrowExpression"];
+            MapBrowExpression(ref eyeShapes, browExp, true);
+            MapBrowExpression(ref eyeShapes, browExp, false);
+            return;
+        }
+
+        MapBrowExpression(ref eyeShapes, _parameterValues["BrowExpressionRight"], true);
+        MapBrowExpression(ref eyeShapes, _parameterValues["BrowExpressionLeft"], false);
+    }
+
+    private void MapBrowExpression(ref UnifiedExpressionShape[] eyeShapes, float browExp, bool isRight)
+    {
+        float lowerWeight = 0f;
+        float raiseWeight = 0f;
+
+        if (browExp < 0.5f)
+        {
+            lowerWeight = (0.5f - browExp) * 2f;
+        }
+        else if (browExp > 0.5f)
+        {
+            raiseWeight = (browExp - 0.5f) * 2f;
+        }
+
+        if (isRight)
+        {
+            eyeShapes[(int)UnifiedExpressions.BrowLowererRight].Weight = lowerWeight;
+            eyeShapes[(int)UnifiedExpressions.BrowPinchRight].Weight = lowerWeight;
+            eyeShapes[(int)UnifiedExpressions.BrowInnerUpRight].Weight = raiseWeight;
+            eyeShapes[(int)UnifiedExpressions.BrowOuterUpRight].Weight = raiseWeight;
+        }
+        else
+        {
+            eyeShapes[(int)UnifiedExpressions.BrowLowererLeft].Weight = lowerWeight;
+            eyeShapes[(int)UnifiedExpressions.BrowPinchLeft].Weight = lowerWeight;
+            eyeShapes[(int)UnifiedExpressions.BrowInnerUpLeft].Weight = raiseWeight;
+            eyeShapes[(int)UnifiedExpressions.BrowOuterUpLeft].Weight = raiseWeight;
+        }
     }
 
     private void HandleEyeGaze(ref UnifiedEyeData eyeData, bool isSingleEyeMode)
