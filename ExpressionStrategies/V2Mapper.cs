@@ -13,7 +13,8 @@ public class V2Mapper : BaseParamMapper
         "EyeX",
         "EyeY",
         "EyeLid",
-        "BrowExpression"
+        "BrowExpression",
+        "EyeSquint"
     };
 
     private Dictionary<string, float> _parameterValues = new()
@@ -32,6 +33,11 @@ public class V2Mapper : BaseParamMapper
         { "BrowExpression", 0.5f },
         { "BrowExpressionLeft", 0.5f },
         { "BrowExpressionRight", 0.5f }, 
+        { "CheekSquintRight", 0f },
+        { "CheekSquintLeft", 0f },
+        { "EyeSquintRight", 0f },
+        { "EyeSquintLeft", 0f },
+        { "EyeSquint", 0f },
     };
 
     private readonly string[] _gazeParameters =
@@ -69,7 +75,10 @@ public class V2Mapper : BaseParamMapper
         
         _parameterValues[paramToMap] = oscF.value;
 
-        _isSingleEye = _singleEyeParamNames.Contains(paramToMap);
+        if (paramToMap == "EyeX" || paramToMap == "EyeY")
+            _isSingleEye = true;
+        else if (paramToMap == "EyeLeftX" || paramToMap == "EyeRightX")
+            _isSingleEye = false;
     }
 
     public override void UpdateVRCFTEyeData(ref UnifiedEyeData eyeData, ref UnifiedExpressionShape[] eyeShapes)
@@ -78,7 +87,26 @@ public class V2Mapper : BaseParamMapper
         HandleEyeDilation(ref eyeData);
         HandleEyeOpenness(ref eyeData, ref eyeShapes, _isSingleEye);
         HandleEyebrows(ref eyeShapes, _isSingleEye);
+        HandleSquints(ref eyeShapes, _isSingleEye);
         EmulateEyebrows(ref eyeShapes, _isSingleEye);
+    }
+
+    private void HandleSquints(ref UnifiedExpressionShape[] eyeShapes, bool isSingleEyeMode = false)
+    {
+        if (isSingleEyeMode)
+        {
+            var eyeSquint = _parameterValues["EyeSquint"];
+            eyeShapes[(int)UnifiedExpressions.EyeSquintRight].Weight = eyeSquint;
+            eyeShapes[(int)UnifiedExpressions.EyeSquintLeft].Weight = eyeSquint;
+        }
+        else
+        {
+            eyeShapes[(int)UnifiedExpressions.EyeSquintRight].Weight = _parameterValues["EyeSquintRight"];
+            eyeShapes[(int)UnifiedExpressions.EyeSquintLeft].Weight = _parameterValues["EyeSquintLeft"];
+        }
+
+        eyeShapes[(int)UnifiedExpressions.CheekSquintRight].Weight = _parameterValues["CheekSquintRight"];
+        eyeShapes[(int)UnifiedExpressions.CheekSquintLeft].Weight = _parameterValues["CheekSquintLeft"];
     }
 
     private void HandleEyebrows(ref UnifiedExpressionShape[] eyeShapes, bool isSingleEyeMode = false)
